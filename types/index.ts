@@ -1,6 +1,6 @@
 
 export type Severity = 'high' | 'medium' | 'low';
-export type SuggestionType = 'formatting' | 'content' | 'keyword';
+export type SuggestionType = 'formatting' | 'content' | 'keyword' | 'ats_compatibility';
 
 export interface Suggestion {
   id: string;
@@ -13,10 +13,24 @@ export interface Suggestion {
   severity: Severity;
 }
 
+export interface ATSReport {
+  parsing_health_score: number;
+  layout_warnings: string[];
+  extracted_summary: string;
+  view_as_bot_preview: string;
+}
+
+export interface KeywordWeight {
+  keyword: string;
+  count: number;
+  importance: 'critical' | 'preferred' | 'bonus';
+}
+
 export interface JDAlignment {
   matched_keywords: string[];
   missing_keywords: string[];
   relevant_skills_to_highlight: string[];
+  keyword_weights: KeywordWeight[];
 }
 
 export interface CriteriaScore {
@@ -27,6 +41,7 @@ export interface CriteriaScore {
 
 export interface AuditResult {
   overall_score: number;
+  ats_report: ATSReport;
   criteria: {
     formatting: CriteriaScore;
     content: CriteriaScore;
