@@ -1,52 +1,54 @@
-# Hirely AI: Strategic Resume Auditor
+# Hirely AI: AI Resume Builder & Reviewer
 
-Hirely AI is a performance-focused resume auditor and strategist. I built this to help candidates bypass the "ATS black hole" by providing a high-fidelity simulation of how enterprise parsers see their data, coupled with strategic refactoring based on executive recruiting standards.
+**Hirely AI** is a professional career intelligence platform designed to bypass the "ATS black hole." It provides a high-fidelity simulation of how enterprise parsers see candidate data, coupled with smart editorial logic to transform weak resumes into quantifiable professional documents.
 
-## The Core Logic
+## Core Features
 
-Most resumes fail because they are either unparseable by machines or lack quantifiable impact. This app solves both:
+*   **ATS Simulation:** Strips CSS and layouts to reveal the "Bot View," flagging "ATS killers" like complex tables and non-standard text encodings.
+*   **The XYZ Audit Engine:** Evaluates every bullet point against the Google-standard **XYZ formula**: *Accomplished [X] as measured by [Y], by doing [Z].*
+*   **Strategic Keyword Mapping:** A weighted analyzer that bridges the gap between candidate content and target Job Descriptions.
+*   **Intelligent Refactoring:** Generates clean, semantic, single-column HTML resumes optimized for 100% parse-rate.
+*   **AI Career Advisor:** A persistent strategist (Gemini 3 Pro) for interview prep and industry pivot strategy.
 
-1.  **ATS Simulation:** Performs raw text extraction to reveal what a bot actually sees (stripping layouts, tables, and graphics).
-2.  **Strategic Analysis:** Uses Gemini 3 to audit content against the **XYZ Formula** (Accomplished [X] as measured by [Y], by doing [Z]).
-3.  **Keyword Weighting:** Maps resume density against a Job Description (JD) to identify critical gaps.
-4.  **Refactoring:** Generates a sanitized, single-column HTML document optimized for both human recruiters and machine parsers.
+## Tech Stack
 
-## Tech Stack & Architecture
+*   **Core:** React 19, TypeScript.
+*   **AI LLM:** Google Gemini 3 (Flash/Pro) via `@google/genai`.
+*   **Styling:** Tailwind CSS, Lucide React icons.
+*   **Security:** Multi-layer XSS Sanitization & strict CSP.
 
-*   **Frontend:** React 19 with Tailwind CSS for styling.
-*   **Intelligence:** `@google/genai` (Gemini 3 Flash for audits/refactors, Pro for the strategic chat).
-*   **Icons:** Lucide-React.
-*   **Security:** Custom XSS sanitization pipeline and a strict Content Security Policy (CSP).
+## Technical Highlights
 
-### Project Structure
-- `api/`: Clean abstraction for LLM interactions.
-- `components/`: Modular UI units (Criteria bars, highlighters, etc.).
-- `helpers/`: Pure utility logic separated from React concerns:
-    - `browser.ts`: Handles secure popups and file downloads.
-    - `resume.ts`: Manages HTML templating and name parsing.
-    - `security.ts`: Aggressive HTML sanitization for AI outputs.
-    - `string.ts`: Cleaners for stripping LLM markdown artifacts.
+### 1. Multi-Model Strategy
+The app dynamically selects models based on task complexity:
+- **Gemini 3 Flash:** Handles real-time audits and high-speed resume refactoring.
+- **Gemini 3 Pro:** Reserved for the Career Chat to provide deep reasoning and context retention.
+
+### 2. Security & Sanitization
+To prevent XSS from AI-generated HTML, I implemented a defense-in-depth approach:
+- **Sanitization Pipeline:** Every string passes through an aggressive regex-based sanitizer (`helpers/security.ts`) that strips `<script>`, `<iframe>`, and `on*` event handlers.
+- **Strict CSP:** A restrictive Content Security Policy prevents unauthorized script execution.
+
+### 3. Performance Design
+Built with a **Zero-Build Architecture** using React 19 and ESM Import Maps. This removes the overhead of complex bundlers (like Webpack or Vite), enabling near-instant cold starts and a lightweight footprint.
+
+### 4. Code Structure
+The UI layer is strictly separated from domain logic for better maintainability:
+- **`api/`**: Clean abstraction for LLM interactions.
+- **`helpers/`**: Utilities for document generation and security.
+- **`components/`**: Modular, atomic UI units.
 
 ## Setup
 
-### 1. Environment Variables
-You need a Google AI Studio API Key. The app expects it in your environment:
-
+### Environment
+The application requires a Google AI Studio API Key. Ensure it is accessible in your environment:
 ```bash
 API_KEY=your_gemini_api_key_here
 ```
 
-### 2. Dependencies
-The project uses an import map in the HTML, so there's no complex build step required if you're serving it directly, but for local development:
-
+### Development
+Since the project uses Import Maps, you can serve it via any static file server:
 ```bash
-npm install
-# or just serve the directory if using a tool like Vite/Live Server
+# Example
+npx serve .
 ```
-
-## Security Measures
-
-AI-generated HTML can be a vector for XSS. To mitigate this:
-*   Every string returned by the LLM passes through a `sanitizeHtml` helper that strips `<script>`, `<iframe>`, and `on*` event handlers.
-*   The `index.html` implements a strict CSP meta tag to prevent unauthorized script execution or data exfiltration.
-*   System instructions explicitly forbid the model from generating executable code.
