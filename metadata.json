@@ -1,5 +1,5 @@
 {
-  "name": "Hirely AI: AI Resume Builder & Reviewer",
-  "description": "A high-performance resume audit and optimization platform designed to accelerate your career growth through strategic AI intelligence.",
+  "name": "Hirely AI | Production Ready",
+  "description": "Enterprise-grade AI resume optimizer built with Next.js and Gemini 3.",
   "requestFramePermissions": []
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -7,17 +6,17 @@ export const CriteriaBar = ({ score, label, tooltip }: { score: number, label: s
   const textColorClass = score >= 80 ? 'text-violet-500' : score >= 50 ? 'text-amber-500' : 'text-rose-500';
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-3.5">
       <div className="flex justify-between items-end">
         <div className="flex items-center">
-          <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
+          <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
           <InfoTooltip text={tooltip} />
         </div>
-        <span className={`text-[11px] font-bold ${textColorClass}`}>{score}/100</span>
+        <span className={`text-sm font-bold ${textColorClass}`}>{score}/100</span>
       </div>
-      <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
         <div 
-          className={`h-full ${colorClass} transition-all duration-1000 ease-out`} 
+          className={`h-full ${colorClass} transition-all duration-1000 ease-out shadow-lg`} 
           style={{ width: `${score}%` }}
         />
       </div>

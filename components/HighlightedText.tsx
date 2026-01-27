@@ -4,7 +4,7 @@ import React from 'react';
 export const HighlightedText = ({ text }: { text: string }) => {
   const parts = text.split(/(\[ERR\].*?\[\/ERR\])/g);
   return (
-    <p className="text-xs text-slate-500 dark:text-slate-500 italic">
+    <p className="text-sm text-slate-500 dark:text-slate-500 italic">
       "
       {parts.map((part, i) => {
         if (part.startsWith('[ERR]') && part.endsWith('[/ERR]')) {
