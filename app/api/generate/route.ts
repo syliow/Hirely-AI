@@ -97,11 +97,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, payload } = body;
 
-    if (!process.env.API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Server misconfigured: Missing API Key" }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     if (action === 'audit') {
       const { file, jdText } = payload as { file: FileData, jdText: string };
