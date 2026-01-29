@@ -3,8 +3,12 @@ import type { Metadata } from 'next';
 
 
 export const metadata: Metadata = {
-  title: 'Hirely AI | AI Resume Builder & Reviewer',
+  title: 'Hirely AI',
   description: 'High-performance resume audit and optimization platform.',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
 };
 
 // Fix: Import React to resolve the 'Cannot find namespace React' error when using React.ReactNode

@@ -1,7 +1,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from "@google/genai";
-import { FileData, RefactorOptions, AuditResult } from "@/lib/types";
+import { FileData, RefactorOptions } from "@/lib/types";
+import { checkRateLimit, getClientIdentifier, getRateLimitHeaders, RATE_LIMIT_ERROR } from "@/lib/rateLimit";
+import { validateRequest, validateContentLength } from "@/lib/validation";
+import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
 
 const SYSTEM_INSTRUCTION = `
 You are the "Hirely AI Strategic Advisor," acting as a highly experienced Executive Recruiter and Career Strategist.
@@ -94,15 +97,78 @@ const AUDIT_SCHEMA = {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // 1. Validate content length first
+    const contentLengthResult = validateContentLength(req.headers.get('content-length'));
+    if (!contentLengthResult.valid) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.PAYLOAD_TOO_LARGE, contentLengthResult.error),
+        { status: 413 }
+      );
+    }
+
+    // 2. Get client identifier for rate limiting
+    const clientId = getClientIdentifier(req);
+
+    // 3. Check minute-based rate limit
+    const minuteLimit = checkRateLimit(clientId, 'minute');
+    if (minuteLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, minuteLimit.retryAfter),
+        { 
+          status: 429,
+          headers: getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn, minuteLimit.retryAfter)
+        }
+      );
+    }
+
+    // 4. Check daily rate limit
+    const dailyLimit = checkRateLimit(clientId, 'daily');
+    if (dailyLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
+        { 
+          status: 429,
+          headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
+        }
+      );
+    }
+
+    // 5. Parse and validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid JSON in request body'),
+        { status: 400 }
+      );
+    }
+
+    const validationResult = validateRequest(body);
+    if (!validationResult.valid) {
+      return NextResponse.json(
+        createErrorResponse(
+          (validationResult.errorCode as keyof typeof ERROR_CODES) || ERROR_CODES.INVALID_ACTION,
+          validationResult.error
+        ),
+        { status: 400 }
+      );
+    }
+
     const { action, payload } = body;
 
+    // 6. Check API key
     if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Server misconfigured: Missing API Key" }, { status: 500 });
+      console.error("GEMINI_API_KEY is not configured");
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.MISSING_API_KEY),
+        { status: 500 }
+      );
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    // 7. Process requests based on action
     if (action === 'audit') {
       const { file, jdText } = payload as { file: FileData, jdText: string };
       const response = await ai.models.generateContent({
@@ -116,7 +182,9 @@ export async function POST(req: NextRequest) {
           responseSchema: AUDIT_SCHEMA,
         },
       });
-      return NextResponse.json(JSON.parse(response.text || '{}'));
+      
+      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
+      return NextResponse.json(JSON.parse(response.text || '{}'), { headers: responseHeaders });
     }
 
     if (action === 'refactor') {
@@ -128,7 +196,9 @@ export async function POST(req: NextRequest) {
         ],
         config: { systemInstruction: SYSTEM_INSTRUCTION },
       });
-      return NextResponse.json({ text: response.text });
+      
+      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
+      return NextResponse.json({ text: response.text }, { headers: responseHeaders });
     }
 
     if (action === 'chat') {
@@ -138,12 +208,26 @@ export async function POST(req: NextRequest) {
         contents: messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
         config: { systemInstruction: SYSTEM_INSTRUCTION },
       });
-      return NextResponse.json({ text: response.text });
+      
+      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
+      return NextResponse.json({ text: response.text }, { headers: responseHeaders });
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      createErrorResponse(ERROR_CODES.INVALID_ACTION),
+      { status: 400 }
+    );
+  } catch (error: unknown) {
+    console.error("API Error:", error);
+    
+    // Parse the error to detect quota/rate limit issues from Gemini
+    const { errorCode, message } = parseApiError(error);
+    
+    const status = errorCode === 'RATE_LIMIT_EXCEEDED' || errorCode === 'API_QUOTA_EXCEEDED' ? 429 : 500;
+    
+    return NextResponse.json(
+      createErrorResponse(errorCode, message),
+      { status }
+    );
   }
 }

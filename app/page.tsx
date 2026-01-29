@@ -8,7 +8,7 @@ import {
   ArrowUpRight, Download, Sparkles, FileDown,
   Settings, Sliders, HelpCircle, Upload, ChevronDown, ChevronUp,
   Search, AlertCircle, RefreshCw, BrainCircuit, PlayCircle, ChevronRight, ChevronLeft, Printer,
-  PenTool, Star, Terminal, Bot, Eye, EyeOff
+  PenTool, Star, Terminal, Bot, Eye, EyeOff, Clock, ShieldAlert, Ban
 } from 'lucide-react';
 
 // API & Types
@@ -27,6 +27,15 @@ import { InfoTooltip } from '@/components/InfoTooltip';
 import { CriteriaBar } from '@/components/CriteriaBar';
 import { KeywordTag } from '@/components/KeywordTag';
 import { Footer } from '@/components/Footer';
+
+// API Error Types
+interface ApiErrorResponse {
+  error: string;
+  errorCode?: string;
+  retryAfter?: number;
+}
+
+type LimitModalType = 'rate_limit' | 'daily_limit' | 'quota_exceeded' | null;
 
 // Constants
 const TOUR_STEPS = [
@@ -89,6 +98,10 @@ export default function Home() {
   const [tourActive, setTourActive] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
+  // Rate limit / quota modal state
+  const [limitModal, setLimitModal] = useState<LimitModalType>(null);
+  const [retryAfter, setRetryAfter] = useState<number>(0);
+
   const [refactorSettings, setRefactorSettings] = useState<RefactorOptions>({
     level: 'junior',
     jdAlignment: 100
@@ -117,15 +130,50 @@ export default function Home() {
     }
   }, [messages, chatLoading, chatOpen]);
 
+  // Countdown timer for retry
+  useEffect(() => {
+    if (retryAfter > 0) {
+      const timer = setInterval(() => {
+        setRetryAfter(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [retryAfter]);
+
   const callApi = async (action: string, payload: any) => {
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, payload }),
     });
+    
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || "Failed to communicate with AI");
+      const errorData: ApiErrorResponse = await res.json();
+      
+      // Handle specific error codes with modals
+      if (errorData.errorCode === 'RATE_LIMIT_EXCEEDED') {
+        setRetryAfter(errorData.retryAfter || 60);
+        setLimitModal('rate_limit');
+        throw new Error('RATE_LIMIT');
+      }
+      
+      if (errorData.errorCode === 'DAILY_LIMIT_EXCEEDED') {
+        setLimitModal('daily_limit');
+        throw new Error('DAILY_LIMIT');
+      }
+      
+      if (errorData.errorCode === 'API_QUOTA_EXCEEDED') {
+        setLimitModal('quota_exceeded');
+        throw new Error('QUOTA_EXCEEDED');
+      }
+      
+      throw new Error(errorData.error || "Failed to communicate with AI");
     }
     return res.json();
   };
@@ -171,12 +219,14 @@ export default function Home() {
       const auditData = await callApi('audit', { file: selectedFile, jdText });
       setResult(auditData);
     } catch (err: any) {
-      setNotification({ 
-        type: 'error', 
-        message: err.message?.includes('429') 
-          ? "API limit reached. Please wait a moment before trying again." 
-          : "Audit failed. Check your internet connection or try a different file." 
-      });
+      // Don't show notification if limit modal is already shown
+      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
+      if (!isLimitError) {
+        setNotification({ 
+          type: 'error', 
+          message: "Audit failed. Check your internet connection or try a different file." 
+        });
+      }
     } finally {
       clearInterval(interval);
       setLoading(false);
@@ -232,7 +282,11 @@ export default function Home() {
         downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       }
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
+      // Don't show notification if limit modal is already shown
+      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
+      if (!isLimitError) {
+        setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
+      }
     } finally {
       setRefactoring(false);
     }
@@ -250,8 +304,12 @@ export default function Home() {
     try {
       const { text } = await callApi('chat', { messages: newMessages });
       setMessages(prev => [...prev, { role: 'model', text, timestamp: Date.now() }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
+    } catch (err: any) {
+      // Don't show error message in chat if limit modal is shown
+      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
+      if (!isLimitError) {
+        setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
+      }
     } finally {
       setChatLoading(false);
     }
@@ -295,6 +353,111 @@ export default function Home() {
                 <X className="w-6 h-6" />
               </button>
            </div>
+        </div>
+      )}
+
+      {/* Rate Limit / Quota Exceeded Modal */}
+      {limitModal && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-8 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-[#0f172a] border border-rose-500/30 rounded-[56px] p-14 max-w-xl w-full shadow-2xl space-y-10 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center space-y-8">
+              {/* Icon based on limit type */}
+              <div className={`w-28 h-28 rounded-[36px] flex items-center justify-center shadow-inner ${
+                limitModal === 'rate_limit' 
+                  ? 'bg-amber-500/10 border-2 border-amber-500/30' 
+                  : limitModal === 'daily_limit' 
+                  ? 'bg-orange-500/10 border-2 border-orange-500/30'
+                  : 'bg-rose-500/10 border-2 border-rose-500/30'
+              }`}>
+                {limitModal === 'rate_limit' && <Clock className="w-14 h-14 text-amber-500" />}
+                {limitModal === 'daily_limit' && <Ban className="w-14 h-14 text-orange-500" />}
+                {limitModal === 'quota_exceeded' && <ShieldAlert className="w-14 h-14 text-rose-500" />}
+              </div>
+              
+              {/* Title */}
+              <div className="space-y-4">
+                <h4 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
+                  {limitModal === 'rate_limit' && 'Slow Down!'}
+                  {limitModal === 'daily_limit' && 'Daily Limit Reached'}
+                  {limitModal === 'quota_exceeded' && 'Service Unavailable'}
+                </h4>
+                
+                {/* Description based on type */}
+                <p className="text-lg text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-md mx-auto">
+                  {limitModal === 'rate_limit' && 
+                    "You're making requests too quickly. Please wait a moment before trying again."
+                  }
+                  {limitModal === 'daily_limit' && 
+                    "You've reached your daily usage limit. This helps us keep the service free for everyone. Please try again tomorrow!"
+                  }
+                  {limitModal === 'quota_exceeded' && 
+                    "Our AI service has reached its capacity for today. We're working on expanding our limits. Please try again later."
+                  }
+                </p>
+              </div>
+
+              {/* Countdown timer for rate limit */}
+              {limitModal === 'rate_limit' && retryAfter > 0 && (
+                <div className="flex items-center gap-4 px-8 py-5 bg-amber-500/10 border border-amber-500/20 rounded-3xl">
+                  <Clock className="w-7 h-7 text-amber-500 animate-pulse" />
+                  <div className="text-left">
+                    <p className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">Try again in</p>
+                    <p className="text-4xl font-black text-amber-500 tabular-nums">{retryAfter}s</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tips */}
+              <div className="w-full bg-slate-50 dark:bg-black/30 rounded-3xl p-6 text-left space-y-3 border border-slate-200 dark:border-white/5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">💡 Tips</p>
+                <ul className="text-sm text-slate-500 dark:text-slate-400 space-y-2">
+                  {limitModal === 'rate_limit' && (
+                    <>
+                      <li>• Wait for the timer to finish before retrying</li>
+                      <li>• Each action (audit, refactor, chat) counts as one request</li>
+                    </>
+                  )}
+                  {limitModal === 'daily_limit' && (
+                    <>
+                      <li>• Limits reset at midnight UTC</li>
+                      <li>• You get 50 requests per day</li>
+                      <li>• Make each analysis count!</li>
+                    </>
+                  )}
+                  {limitModal === 'quota_exceeded' && (
+                    <>
+                      <li>• This is a temporary issue on our end</li>
+                      <li>• Usually resolves within a few hours</li>
+                      <li>• Check back later today</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setLimitModal(null)} 
+                className={`flex items-center gap-4 px-12 py-5 rounded-[28px] text-sm font-black uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 ${
+                  limitModal === 'rate_limit' && retryAfter > 0
+                    ? 'bg-slate-200 dark:bg-white/10 text-slate-500 cursor-not-allowed'
+                    : 'bg-violet-500 text-white hover:bg-violet-400 shadow-violet-500/30'
+                }`}
+                disabled={limitModal === 'rate_limit' && retryAfter > 0}
+              >
+                {limitModal === 'rate_limit' && retryAfter > 0 ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Please Wait
+                  </>
+                ) : (
+                  <>
+                    <X className="w-5 h-5" /> Close
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
