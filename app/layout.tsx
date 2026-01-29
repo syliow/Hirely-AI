@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: 'Hirely AI',
   description: 'High-performance resume audit and optimization platform.',
   icons: {
-    icon: '/icon.png',
-    apple: '/icon.png',
+    icon: '/icon.svg',
+    apple: '/icon.svg',
   },
 };
 

@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent background - no background element needed -->
+  
+  <!-- 3D Geometric Logo - Scaled up version of the BrandLogo -->
+  <g transform="translate(256, 256) scale(18)">
+    <!-- Top face (light purple) -->
+    <path d="M0 0L8 -4.5L0 -9L-8 -4.5L0 0Z" fill="#a78bfa"/>
+    
+    <!-- Right face (medium purple) -->
+    <path d="M0 0L8 -4.5V4.5L0 9V0Z" fill="#7c3aed"/>
+    
+    <!-- Left face (dark purple) -->
+    <path d="M0 0L-8 -4.5V4.5L0 9V0Z" fill="#6d28d9"/>
+  </g>
+</svg>
