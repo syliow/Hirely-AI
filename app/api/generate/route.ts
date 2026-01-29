@@ -5,6 +5,14 @@ import { FileData, RefactorOptions } from "@/lib/types";
 import { checkRateLimit, getClientIdentifier, getRateLimitHeaders, RATE_LIMIT_ERROR } from "@/lib/rateLimit";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
+// @ts-ignore
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
+
+// @ts-ignore
+import * as mammoth from 'mammoth';
+import { Buffer } from 'buffer';
 
 const SYSTEM_INSTRUCTION = `
 You are the "Hirely AI Strategic Advisor," acting as a highly experienced Executive Recruiter and Career Strategist.
@@ -168,13 +176,35 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    // Helper to extract text from files (workaround for Gemma strict text-only input)
+    async function extractTextFromFile(file: FileData): Promise<string> {
+      try {
+        const buffer = Buffer.from(file.data, 'base64');
+        if (file.mimeType.includes('pdf')) {
+          const data = await pdf(buffer);
+          return data.text;
+        }
+        if (file.mimeType.includes('word') || file.mimeType.includes('docx') || file.mimeType.includes('officedocument')) {
+          const result = await mammoth.extractRawText({ buffer });
+          return result.value;
+        }
+      } catch (e) {
+        console.error("Text Extraction Error:", e);
+        return "";
+      }
+      return "";
+    }
+
     // 7. Process requests based on action
     if (action === 'audit') {
       const { file, jdText } = payload as { file: FileData, jdText: string };
+      
+      const extractedText = await extractTextFromFile(file);
+
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemma-3-27b-it",
         contents: [
-          { parts: [{ inlineData: { data: file.data, mimeType: file.mimeType } }, { text: `AUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}` }] }
+          { parts: [{ text: `RESUME TEXT CONTENT:\n${extractedText}\n\nAUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}` }] }
         ],
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
@@ -189,10 +219,13 @@ export async function POST(req: NextRequest) {
 
     if (action === 'refactor') {
       const { file, jdText, options } = payload as { file: FileData, jdText: string, options: RefactorOptions };
+      
+      const extractedText = await extractTextFromFile(file);
+
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemma-3-27b-it",
         contents: [
-          { parts: [{ inlineData: { data: file.data, mimeType: file.mimeType } }, { text: `STRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
+          { parts: [{ text: `RESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
         ],
         config: { systemInstruction: SYSTEM_INSTRUCTION },
       });
@@ -204,7 +237,7 @@ export async function POST(req: NextRequest) {
     if (action === 'chat') {
       const { messages } = payload as { messages: any[] };
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
+        model: "gemma-3-9b-it",
         contents: messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
         config: { systemInstruction: SYSTEM_INSTRUCTION },
       });
