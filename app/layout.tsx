@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: 'Hirely AI - Your AI Resume Helper',
+  title: 'Hirely AI',
   description: 'High-performance resume audit and optimization platform to help you craft the perfect resume.',
   icons: {
     icon: '/icon.svg',

@@ -1,7 +1,7 @@
 # Hirely AI: AI Resume Builder & Reviewer
 
-> ⚠️ **SERVICE NOTICE:** This application runs on the **Google Gemini Free Tier**.
-> While we strive for high availability, you may experience occasional rate limits or "Quota Exceeded" errors during peak usage.
+> ⚠️ **Note:** This application runs on the **Google Gemini Free Tier**.
+> You may experience occasional rate limits or "Quota Exceeded" errors during peak usage.
 > The application includes built-in rate limiting (30 requests/minute) to ensure fair access for all users.
 
 **Hirely AI** is a professional career intelligence platform designed to bypass the "ATS black hole." It provides a high-fidelity simulation of how enterprise parsers see candidate data, coupled with smart editorial logic to transform weak resumes into quantifiable professional documents.
