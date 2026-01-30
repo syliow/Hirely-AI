@@ -1,4 +1,6 @@
 # Hirely AI: AI Resume Builder & Reviewer
+<img width="1559" height="964" alt="hirelyAIimg" src="https://github.com/user-attachments/assets/d1e74842-0570-47ae-920d-1a8e4daa08b7" />
+
 
 > ⚠️ **Note:** This application runs on the **Google Gemini Free Tier**.
 > You may experience occasional rate limits or "Quota Exceeded" errors during peak usage.
