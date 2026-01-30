@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
-
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: 'Hirely AI - Your AI Resume Helper',
@@ -44,6 +44,7 @@ export default function RootLayout({
       </head>
       <body className="bg-slate-50 dark:bg-[#040711] transition-colors duration-300 antialiased selection:bg-violet-500/30">
         {children}
+        <Analytics />
       </body>
     </html>
   );
