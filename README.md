@@ -1,61 +1,51 @@
 # Hirely AI: AI Resume Builder & Reviewer
 
+> ⚠️ **SERVICE NOTICE:** This application runs on the **Google Gemini Free Tier**.
+> While we strive for high availability, you may experience occasional rate limits or "Quota Exceeded" errors during peak usage.
+> The application includes built-in rate limiting (30 requests/minute) to ensure fair access for all users.
+
 **Hirely AI** is a professional career intelligence platform designed to bypass the "ATS black hole." It provides a high-fidelity simulation of how enterprise parsers see candidate data, coupled with smart editorial logic to transform weak resumes into quantifiable professional documents.
 
 ## Core Features
 
-- **ATS Simulation:** Strips CSS and layouts to reveal the "Bot View," flagging "ATS killers" like complex tables and non-standard text encodings.
+- **ATS Simulation:** Strips CSS and layouts to reveal the **"Raw Bot View"**, providing a precise "Parsing Health Score" and flagging layout risks (e.g., columns, graphics).
 - **The XYZ Audit Engine:** Evaluates every bullet point against the Google-standard **XYZ formula**: _Accomplished [X] as measured by [Y], by doing [Z]._
-- **Strategic Keyword Mapping:** A weighted analyzer that bridges the gap between candidate content and target Job Descriptions.
+- **Strategic Keyword Mapping:** A weighted analyzer that identifies Skill Gaps and matches your core competencies to target Job Descriptions.
 - **Intelligent Refactoring:** Generates clean, semantic, single-column HTML resumes optimized for 100% parse-rate.
-- **AI Career Advisor:** A persistent strategist (Gemini 3 Flash/Pro) for interview prep and industry pivot strategy.
-- **Rate Limiting & Security:** Multi-layer protection with request rate limiting, input validation, and XSS sanitization.
+- **AI Career Advisor:** A "Friendly but Solid" career partner (powered by Gemma 3) for interview prep, powered by a structured "Critique -> Rewrite" logic.
+- **Privacy-First Design:** Resumes are processed in memory and never stored permanently.
 
 ## Tech Stack
 
 - **Framework:** Next.js 15 (App Router)
 - **Frontend:** React 19, TypeScript
-- **AI LLM:** Google Gemini 3 (Flash/Pro) via `@google/genai`
+- **AI LLM:** **Google Gemma 3 (4B-IT)** via `@google/genai`
 - **Styling:** Tailwind CSS (CDN), Lucide React icons
 - **Security:** Multi-layer XSS Sanitization, strict CSP, rate limiting, input validation
 
 ## Technical Highlights
 
-### 1. Multi-Model Strategy
+### 1. Specialized Prompt Engineering (Gemma 3 4B)
 
-The app dynamically selects models based on task complexity:
+Instead of relying on massive models, Hirely AI proves that **smaller, faster models (4B)** can outperform giants when given structured guidance. We use a **"Rules-Based Execution"** prompt strategy:
 
-- **Gemini 3 Flash:** Handles real-time audits and high-speed resume refactoring.
-- **Gemini 3 Pro:** Reserved for the Career Chat to provide deep reasoning and context retention.
+- **Strict Protocol:** "Evaluate -> Critique -> Rewrite -> Check Missing Data".
+- **Structured Output:** Forces the model to think in steps, ensuring high-quality advice without hallucination.
+- **Zero-Truncation:** Explicit instructions guarantee full, actionable rewrites for every bullet point.
 
-### 2. Security & Rate Limiting
+### 2. Rapid Analysis Architecture
+
+- **Audit Engine:** Switched to **Gemma 3 4B-IT** for blazing-fast performance.
+- **Smart Feedback:** Replaced generic "Thinking..." indicators with informative progress steps (e.g., "Extracting Raw Text...", "Analyzing Formatting...").
+
+### 3. Security & Rate Limiting
 
 To ensure service stability and prevent abuse:
 
-- **Rate Limiting:** 10 requests per minute, 50 requests per day per IP address
-- **Input Validation:** Comprehensive validation for all API inputs (file size, MIME types, text length)
-- **Sanitization Pipeline:** Every string passes through an aggressive regex-based sanitizer (`helpers/security.ts`) that strips `<script>`, `<iframe>`, and `on*` event handlers.
-- **Strict CSP:** A restrictive Content Security Policy prevents unauthorized script execution.
-- **User Feedback:** Clear modal popups for rate limit, daily limit, and quota exceeded scenarios
-
-### 3. Modern Next.js Architecture
-
-Built with Next.js 15 App Router for optimal performance:
-
-- **Server Components:** Efficient data fetching and rendering
-- **API Routes:** Clean RESTful API design with `/api/generate` endpoint
-- **TypeScript:** Full type safety across the application
-- **Metadata API:** SEO-optimized with proper favicon and meta tags
-
-### 4. Code Structure
-
-The UI layer is strictly separated from domain logic for better maintainability:
-
-- **`app/`**: Next.js App Router pages and layouts
-- **`app/api/`**: API route handlers for AI interactions
-- **`lib/`**: Core utilities (types, validation, rate limiting, error handling)
-- **`helpers/`**: Utilities for document generation, security, and browser operations
-- **`components/`**: Modular, atomic UI components
+- **Rate Limiting:** 30 requests per minute (per IP).
+- **Input Validation:** Strict validation for file size (10MB) and MIME types (PDF, DOCX).
+- **Sanitization Pipeline:** Every string passes through an aggressive regex-based sanitizer (`helpers/security.ts`) stripping malicious code.
+- **User Feedback:** Clear, friendly UI notifications for quota warnings.
 
 ## Setup
 
@@ -102,13 +92,10 @@ The application is configured for Netlify deployment with the following settings
 - Publish directory: `.next`
 - Node version: 18+
 
-See `netlify.toml` for deployment configuration.
-
 ## API Usage Limits
 
 To keep the service free and fair for everyone:
 
-- **Rate Limit:** 10 requests per minute per IP
+- **Rate Limit:** 30 requests per minute per IP
 - **Daily Limit:** 50 requests per day per IP
-- **File Size Limit:** 10MB maximum for resume uploads
-- **Supported Formats:** PDF, DOCX
+- **File Size Limit:** 10MB maximum

@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 
 
 export const metadata: Metadata = {
-  title: 'Hirely AI',
-  description: 'High-performance resume audit and optimization platform.',
+  title: 'Hirely AI - Your AI Resume Helper',
+  description: 'High-performance resume audit and optimization platform to help you craft the perfect resume.',
   icons: {
     icon: '/icon.svg',
     apple: '/icon.svg',

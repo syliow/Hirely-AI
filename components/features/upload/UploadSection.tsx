@@ -3,9 +3,12 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { Sparkles, Upload, CheckCircle2 } from 'lucide-react';
 import { FileData } from '@/lib/types';
 
+
+
 interface UploadSectionProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   selectedFile: FileData | null;
+
 }
 
 export const UploadSection: React.FC<UploadSectionProps> = ({ onFileUpload, selectedFile }) => {
@@ -20,14 +23,16 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onFileUpload, sele
       </div>
       <div className="space-y-8 relative z-10">
         <h2 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase tracking-[0.1em]">Hirely AI Resume Helper</h2>
-        <p className="max-w-3xl text-xl text-slate-500 dark:text-slate-500 leading-relaxed mx-auto font-medium">Upload your resume and a target job description to begin a high-fidelity career acceleration audit.</p>
-        <div className="pt-10">
+        <p className="max-w-3xl text-xl text-slate-500 dark:text-slate-500 leading-relaxed mx-auto font-medium">Upload your resume and the job you want. We'll show you exactly how to bridge the gap and get hired.</p>
+        <div className="pt-10 space-y-6">
           <button onClick={() => fileInputRef.current?.click()} className="px-14 py-7 bg-violet-500 text-white rounded-[36px] font-black uppercase text-base tracking-widest shadow-2xl shadow-violet-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-6 mx-auto">
             <Upload className="w-6 h-6" /> Choose Resume File
           </button>
           <input type="file" ref={fileInputRef} onChange={onFileUpload} className="hidden" accept=".pdf,.docx" />
+          
+
         </div>
-        {selectedFile && <div className="flex items-center gap-4 justify-center text-violet-500 animate-in fade-in zoom-in font-black uppercase text-sm tracking-[0.2em] mt-10"><div className="p-2 bg-violet-500 rounded-full shadow-lg"><CheckCircle2 className="w-5 h-5 text-white" /></div> {selectedFile.name} Ready for Audit</div>}
+        {selectedFile && <div className="flex items-center gap-4 justify-center text-violet-500 animate-in fade-in zoom-in font-black uppercase text-sm tracking-[0.2em] mt-10"><div className="p-2 bg-violet-500 rounded-full shadow-lg"><CheckCircle2 className="w-5 h-5 text-white" /></div> {selectedFile.name}</div>}
       </div>
     </div>
   );

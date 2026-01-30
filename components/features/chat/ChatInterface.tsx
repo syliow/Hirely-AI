@@ -10,6 +10,28 @@ const CHAT_SUGGESTIONS = [
   { text: "What makes a resume stand out?", icon: <Sparkles className="w-4 h-4" /> }
 ];
 
+const LOADING_MESSAGES = [
+  "Reviewing your request...",
+  "Drafting the perfect response...",
+  "Consulting the career strategy playbook...",
+  "Analyzing key details...",
+  "Polishing my advice...",
+  "Thinking..."
+];
+
+const TypingMessage = () => {
+  const [msg, setMsg] = React.useState(LOADING_MESSAGES[0]);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setMsg(LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span className="text-sm text-slate-500 dark:text-slate-400 font-medium animate-pulse">{msg}</span>;
+};
+
 interface ChatInterfaceProps {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -58,11 +80,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
               </div>
             </div>
           ))}
-          {loading && <div className="flex justify-start"><div className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-[32px] rounded-tl-none border border-slate-200 dark:border-white/5"><Loader2 className="w-6 h-6 animate-spin text-violet-500" /></div></div>}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-[32px] rounded-tl-none border border-slate-200 dark:border-white/5 flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                <TypingMessage />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-10 border-t border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#080d1a]/50 flex flex-col gap-8">
-          {!loading && (
+          {!loading && messages.length <= 1 && (
             <div className="flex flex-wrap gap-3">
               {CHAT_SUGGESTIONS.map((suggestion, i) => (
                 <button key={i} onClick={() => onSendMessage(suggestion.text)} className="flex items-center gap-3 px-5 py-3 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-violet-500 hover:border-violet-500/30 transition-all shadow-sm">

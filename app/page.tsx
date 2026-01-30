@@ -15,7 +15,6 @@ import { cleanAIHtml } from '@/helpers/string';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/Footer';
 import { Notification } from '@/components/ui/Notification';
-import { LimitModal, LimitModalType } from '@/components/ui/LimitModal';
 
 import { StrategySettings } from '@/components/features/settings/StrategySettings';
 import { TourOverlay } from '@/components/features/tour/TourOverlay';
@@ -46,7 +45,7 @@ export default function Home() {
   // --- Feature State: Chat ---
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Hi! I'm Hirely AI, your personal resume partner. I'm so ready to help you land that dream job! Shall we take a look at your profile?", timestamp: Date.now() }
+    { role: 'model', text: "Hi! I'm Hirely AI, your personal AI Resume Helper. I'm ready to help you craft the best resume possible! Shall we take a look at your profile?", timestamp: Date.now() }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -63,8 +62,10 @@ export default function Home() {
   const [tourStep, setTourStep] = useState(0);
 
   // --- Feature State: Limits ---
-  const [limitModal, setLimitModal] = useState<LimitModalType>(null);
   const [retryAfter, setRetryAfter] = useState<number>(0);
+
+  // --- Feature State: Security ---
+
 
   // --- Effects ---
   useEffect(() => {
@@ -102,25 +103,30 @@ export default function Home() {
       const errorData: ApiError = await res.json();
       
       if (errorData.errorCode === 'RATE_LIMIT_EXCEEDED') {
-        setRetryAfter(errorData.retryAfter || 60);
-        setLimitModal('rate_limit');
+        const waitTime = errorData.retryAfter || 60;
+        setRetryAfter(waitTime);
+        // User-friendly notification instead of harsh modal
+        setNotification({ type: 'error', message: "Whoa, slow down! Please try again in a few minutes." });
         throw new Error('RATE_LIMIT');
       }
       if (errorData.errorCode === 'DAILY_LIMIT_EXCEEDED') {
-        setLimitModal('daily_limit');
+        setNotification({ type: 'error', message: "You've reached your daily limit. Come back tomorrow!" });
         throw new Error('DAILY_LIMIT');
       }
       if (errorData.errorCode === 'API_QUOTA_EXCEEDED') {
-        setLimitModal('quota_exceeded');
+         setNotification({ type: 'error', message: "System is busy right now. Please try again in a few minutes." });
         throw new Error('QUOTA_EXCEEDED');
       }
       
+      console.error('[API Error]', errorData);
       throw new Error(errorData.error || "Failed to communicate with AI");
     }
     return res.json();
   };
 
   // --- Handlers ---
+
+  
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -147,6 +153,8 @@ export default function Home() {
 
   const handleAudit = async () => {
     if (!selectedFile) return;
+
+
     setLoading(true);
     setResult(null);
     
@@ -182,6 +190,7 @@ export default function Home() {
     setReadyHtml(null);
     setNotification(null);
   };
+
 
   const handleOpenPreview = (html: string) => {
     if (openInNewTab(html)) {
@@ -263,8 +272,6 @@ export default function Home() {
         <Notification type={notification.type} message={notification.message} onClose={() => setNotification(null)} />
       )}
 
-      <LimitModal type={limitModal} retryAfter={retryAfter} onClose={() => setLimitModal(null)} />
-      
       <TourOverlay active={tourActive} step={tourStep} onClose={() => setTourActive(false)} onStepChange={setTourStep} />
 
       <Header 
