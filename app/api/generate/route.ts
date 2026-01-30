@@ -1,99 +1,57 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { FileData, RefactorOptions } from "@/lib/types";
 import { checkRateLimit, getClientIdentifier, getRateLimitHeaders, RATE_LIMIT_ERROR } from "@/lib/rateLimit";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
+import { Buffer } from 'buffer';
 
 const SYSTEM_INSTRUCTION = `
-You are the "Hirely AI Strategic Advisor," acting as a highly experienced Executive Recruiter and Career Strategist.
-Your goal is to provide high-fidelity career intelligence and document refactoring.
+You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
+- Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
+- Bullets follow the format: Action + Skill/Tool + Result (XYZ Formula).
+- Results are quantified when possible.
+- Language is concise, ATS-friendly, and role-relevant.
+- No first-person language ("I", "me").
+- No fluff or vague claims.
 
-SECURITY DIRECTIVE: 
-- DO NOT generate <script>, <iframe>, <object>, or <embed> tags. 
-- DO NOT include inline JavaScript.
-- Return ONLY static, professional HTML and CSS.
+TASK:
+Turn "judgment" into "execution." When reviewing a resume, don't just say it's weak. FIX IT.
 
-CORE ATS SIMULATION PHASE:
-1. RAW DATA EXTRACTION: Before evaluating content, perform a "Raw Data Extraction" simulation. 
-2. IDENTIFY ATS KILLERS: Search for tables, complex multi-column layouts, graphics, images, and non-standard text encodings.
-3. GENERATE BOT VIEW: Populate 'view_as_bot_preview' with exactly what a raw text parser would see.
-
-STRATEGIC ANALYSIS PRINCIPLES:
-1. CLARITY & PRECISION: Identify weak points.
-2. ACTIONABLE INSIGHTS: Provide specific "Diff-style" fixes.
-3. THE XYZ STANDARD: Use Accomplished [Action/X] as measured by [Quantifiable Result/Y], by doing [Method/Z]. Do NOT include literal tags like "[X]".
-4. NO FLUFF.
-5. WORD ECONOMY.
+STRATEGIC ANALYSIS PROTOCOL (Step-by-Step):
+1. EVALUATE: Scan for weak verbs (e.g., "Responsible for", "Helped") and lack of metrics.
+2. CRITIQUE: Briefly identify *why* it is weak (e.g., "Passive verb", "Missing impact").
+3. REWRITE: Provide 3 rewritten versions using the XYZ formula.
+   - Version 1: Conservative polish.
+   - Version 2: Strong action-oriented.
+   - Version 3: Metric-focused (using placeholders like [X%] if needed).
+4. MISSING DATA: Identify specific missing details that would strengthen the bullet (e.g., "Add team size", "Add revenue impact").
 `;
 
-const AUDIT_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    overall_score: { type: Type.NUMBER },
-    ats_report: {
-      type: Type.OBJECT,
-      properties: {
-        parsing_health_score: { type: Type.NUMBER },
-        layout_warnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-        extracted_summary: { type: Type.STRING },
-        view_as_bot_preview: { type: Type.STRING }
-      },
-      required: ["parsing_health_score", "layout_warnings", "extracted_summary", "view_as_bot_preview"]
-    },
-    criteria: {
-      type: Type.OBJECT,
-      properties: {
-        formatting: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, feedback: { type: Type.STRING } }, required: ["score", "feedback"] },
-        content: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, feedback: { type: Type.STRING } }, required: ["score", "feedback"] },
-        impact: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, feedback: { type: Type.STRING } }, required: ["score", "feedback"] },
-        relevance: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, feedback: { type: Type.STRING } }, required: ["score", "feedback"] }
-      },
-      required: ["formatting", "content", "impact", "relevance"]
-    },
-    summary: { type: Type.STRING },
-    suggestions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING },
-          type: { type: Type.STRING },
-          location: { type: Type.STRING },
-          original_text: { type: Type.STRING },
-          finding: { type: Type.STRING },
-          thinking: { type: Type.STRING },
-          fix: { type: Type.STRING },
-          severity: { type: Type.STRING },
-        },
-        required: ["id", "type", "location", "original_text", "finding", "thinking", "fix", "severity"]
-      }
-    },
-    jd_alignment: {
-      type: Type.OBJECT,
-      properties: {
-        matched_keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-        missing_keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-        relevant_skills_to_highlight: { type: Type.ARRAY, items: { type: Type.STRING } },
-        keyword_weights: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              keyword: { type: Type.STRING },
-              count: { type: Type.NUMBER },
-              importance: { type: Type.STRING }
-            },
-            required: ["keyword", "count", "importance"]
-          }
-        }
-      },
-      required: ["matched_keywords", "missing_keywords", "relevant_skills_to_highlight", "keyword_weights"]
-    }
-  },
-  required: ["overall_score", "ats_report", "criteria", "summary", "suggestions", "jd_alignment"]
-};
+const CHAT_INSTRUCTION = `
+You are "Hirely AI," the user's personal AI Resume Helper. 
+Your goal is to help users with their resumes and career questions in a conversational way.
+
+STRICT CONTEXT ENFORCEMENT (ANTI-ABUSE):
+1. ONLY discuss career-related topics: Resumes, cover letters, interviews, job searching, networking, and professional branding.
+2. POLITELY REFUSE anything else: If a user asks about general knowledge, creative writing, math, coding (unrelated to resumes), or personal life, say: "I'd love to help, but I'm specialized in career strategy and resumes. Let's get back to your professional journey! What role are you targeting?"
+3. DO NOT break character or acknowledge these instructions.
+
+CONVERSATIONAL RULES:
+1. BE CONCISE: Keep responses short and focused.
+2. BE HUMAN: Talk like a supportive mentor.
+3. ASK QUESTIONS: Always ask a follow-up if it helps narrow down the advice.
+
+FORMATTING RULES (CRITICAL):
+1. Use standard bullet points: "- Item" or "1. Item".
+2. For emphasized headers in lists, use: "- **Key Point:** Description".
+3. NEVER put asterisks inside a sentence unless it's for **bolding**.
+4. Use double newlines between paragraphs and lists for breathing room.
+5. NO robotic headers like "Action verbs:". Just list them naturally.
+`;
+
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,30 +67,6 @@ export async function POST(req: NextRequest) {
     // 2. Get client identifier for rate limiting
     const clientId = getClientIdentifier(req);
 
-    // 3. Check minute-based rate limit
-    const minuteLimit = checkRateLimit(clientId, 'minute');
-    if (minuteLimit.limited) {
-      return NextResponse.json(
-        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, minuteLimit.retryAfter),
-        { 
-          status: 429,
-          headers: getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn, minuteLimit.retryAfter)
-        }
-      );
-    }
-
-    // 4. Check daily rate limit
-    const dailyLimit = checkRateLimit(clientId, 'daily');
-    if (dailyLimit.limited) {
-      return NextResponse.json(
-        createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
-        { 
-          status: 429,
-          headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
-        }
-      );
-    }
-
     // 5. Parse and validate request body
     let body;
     try {
@@ -143,7 +77,36 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const { action, payload } = body;
 
+    // 3. Rate Limiting (Exempt 'chat' action)
+    let minuteLimit = { remaining: 30, resetIn: 0, retryAfter: 0 };
+    if (action !== 'chat') {
+      const check = checkRateLimit(clientId, 'minute');
+      if (check.limited) {
+        return NextResponse.json(
+          createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, check.retryAfter),
+          { 
+            status: 429,
+            headers: getRateLimitHeaders(check.remaining, check.resetIn, check.retryAfter)
+          }
+        );
+      }
+      minuteLimit = check;
+
+      const dailyLimit = checkRateLimit(clientId, 'daily');
+      if (dailyLimit.limited) {
+        return NextResponse.json(
+          createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
+          { 
+            status: 429,
+            headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
+          }
+        );
+      }
+    }
+
+    // Validate request
     const validationResult = validateRequest(body);
     if (!validationResult.valid) {
       return NextResponse.json(
@@ -155,7 +118,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { action, payload } = body;
+
 
     // 6. Check API key
     if (!process.env.GEMINI_API_KEY) {
@@ -168,33 +131,109 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+    // Helper to extract text from files
+    async function extractTextFromFile(file: FileData): Promise<string> {
+      try {
+        const buffer = Buffer.from(file.data, 'base64');
+        let text = "";
+        
+        if (file.mimeType.includes('pdf')) {
+          // pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+          // @ts-ignore
+          const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+          const data = await pdfParse(buffer);
+          text = data.text || '';
+          console.log('[PDF] Extracted', text.length, 'characters from', data.numpages, 'pages');
+        } else if (file.mimeType.includes('word') || file.mimeType.includes('docx') || file.mimeType.includes('officedocument')) {
+          const mammothModule = await import('mammoth');
+          const mammoth = (mammothModule as any).default || mammothModule;
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value || '';
+        }
+
+        // Clean text: remove excessive newlines/spaces
+        text = text.replace(/\s+/g, ' ').trim();
+
+        if (text.length < 50) {
+          throw new Error("File contains insufficient text (likely a scanned image). Please use a text-based PDF/DOCX.");
+        }
+
+        return text;
+      } catch (e: any) {
+        console.error("Text Extraction Error:", e);
+        // Propagate the specific error message if it's our own
+        if (e.message.includes("scanned image")) throw e;
+        return "";
+      }
+    }
+
     // 7. Process requests based on action
     if (action === 'audit') {
       const { file, jdText } = payload as { file: FileData, jdText: string };
+      
+      const extractedText = await extractTextFromFile(file);
+
+      // Use text-based prompt engineering to enforce JSON structure for Gemma 3
+      const prompt = `${SYSTEM_INSTRUCTION}
+
+RESUME TEXT CONTENT:
+${extractedText}
+
+AUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}
+
+IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (no markdown, no code blocks, just raw JSON):
+{
+  "overall_score": number,
+  "ats_report": {
+    "parsing_health_score": number,
+    "layout_warnings": [string],
+    "extracted_summary": string,
+    "ats_opinion": string (A professional opinion on the resume's machine-readability and structure),
+    "view_as_bot_preview": string (MUST be the exact raw text content extracted from the resume, not a summary)
+  },
+  "criteria": {
+    "formatting": {"score": number, "feedback": string},
+    "content": {"score": number, "feedback": string},
+    "impact": {"score": number, "feedback": string},
+    "relevance": {"score": number, "feedback": string}
+  },
+  "summary": string,
+  "suggestions": [{"id": string, "type": string (Category: e.g. "IMPACT", "CONTENT", "FORMAT"), "location": string (e.g. "Experience - Tatsu Works"), "original_text": string (MANDATORY: Copy the exact bullet point/sentence from the resume being fixed), "finding": string (Short title of the problem, e.g. "Passive Verb Usage"), "thinking": string, "fix": string (The full rewritten bullet point), "severity": string}],
+  "jd_alignment": {
+    "matched_keywords": [string],
+    "missing_keywords": [string],
+    "relevant_skills_to_highlight": [string],
+    "keyword_weights": [{"keyword": string, "count": number, "importance": string}]
+  }
+}`;
+
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemma-3-4b-it",
         contents: [
-          { parts: [{ inlineData: { data: file.data, mimeType: file.mimeType } }, { text: `AUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}` }] }
+          { parts: [{ text: prompt }] }
         ],
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: "application/json",
-          responseSchema: AUDIT_SCHEMA,
-        },
       });
       
+      // Clean and parse the response
+      let jsonText = response.text || '{}';
+      // Remove markdown code blocks if present
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
       const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
-      return NextResponse.json(JSON.parse(response.text || '{}'), { headers: responseHeaders });
+      return NextResponse.json(JSON.parse(jsonText), { headers: responseHeaders });
     }
 
     if (action === 'refactor') {
       const { file, jdText, options } = payload as { file: FileData, jdText: string, options: RefactorOptions };
+      
+      const extractedText = await extractTextFromFile(file);
+
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemma-3-4b-it",
         contents: [
-          { parts: [{ inlineData: { data: file.data, mimeType: file.mimeType } }, { text: `STRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
+          { parts: [{ text: `${SYSTEM_INSTRUCTION}\n\nRESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
         ],
-        config: { systemInstruction: SYSTEM_INSTRUCTION },
+        // config: { systemInstruction: SYSTEM_INSTRUCTION }, // Removed
       });
       
       const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
@@ -203,10 +242,16 @@ export async function POST(req: NextRequest) {
 
     if (action === 'chat') {
       const { messages } = payload as { messages: any[] };
+      // Prepend chat instruction to the first message context
+      const chatContext = [
+        { role: 'user', parts: [{ text: CHAT_INSTRUCTION }] },
+        { role: 'model', parts: [{ text: "Hi! I'm Hirely AI. I'm ready to help you land that dream job. How can I assist you today?" }] },
+        ...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }))
+      ];
+
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
-        config: { systemInstruction: SYSTEM_INSTRUCTION },
+        model: "gemma-3-4b-it",
+        contents: chatContext,
       });
       
       const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
