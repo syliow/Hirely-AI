@@ -6,6 +6,8 @@ import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
 import { Buffer } from 'buffer';
 
+let aiClient: GoogleGenAI | null = null;
+
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
 - Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
@@ -98,7 +100,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    if (!aiClient) {
+      aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+    const ai = aiClient;
 
     // Helper to extract text from files
     async function extractTextFromFile(file: FileData): Promise<string> {
