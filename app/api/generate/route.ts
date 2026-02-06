@@ -6,6 +6,10 @@ import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
 import { Buffer } from 'buffer';
 
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
 - Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
@@ -107,9 +111,6 @@ export async function POST(req: NextRequest) {
         let text = "";
         
         if (file.mimeType.includes('pdf')) {
-          // pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
-          // @ts-ignore
-          const pdfParse = require('pdf-parse/lib/pdf-parse.js');
           const data = await pdfParse(buffer);
           text = data.text || '';
           console.log('[PDF] Extracted', text.length, 'characters from', data.numpages, 'pages');
