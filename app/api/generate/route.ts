@@ -65,11 +65,43 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse and validate request body
     let body;
+    const contentType = req.headers.get('content-type') || '';
+
     try {
-      body = await req.json();
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await req.formData();
+        const action = formData.get('action') as string;
+        const payloadStr = formData.get('payload') as string;
+        const file = formData.get('file') as File; // Web Standard File
+
+        const jsonPayload = JSON.parse(payloadStr || '{}');
+
+        // Construct FileData from the uploaded File
+        let fileData: FileData | undefined;
+        if (file) {
+          fileData = {
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+            file: file
+          };
+        }
+
+        // Reconstruct body structure
+        body = {
+          action,
+          payload: {
+            ...jsonPayload,
+            ...(fileData ? { file: fileData } : {})
+          }
+        };
+
+      } else {
+        body = await req.json();
+      }
     } catch {
       return NextResponse.json(
-        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid JSON in request body'),
+        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid request body'),
         { status: 400 }
       );
     }
@@ -103,7 +135,16 @@ export async function POST(req: NextRequest) {
     // Helper to extract text from files
     async function extractTextFromFile(file: FileData): Promise<string> {
       try {
-        const buffer = Buffer.from(file.data, 'base64');
+        let buffer: Buffer;
+        if (file.file) {
+          const arrayBuffer = await file.file.arrayBuffer();
+          buffer = Buffer.from(arrayBuffer);
+        } else if (file.data) {
+          buffer = Buffer.from(file.data, 'base64');
+        } else {
+          throw new Error("No file content found");
+        }
+
         let text = "";
         
         if (file.mimeType.includes('pdf')) {
