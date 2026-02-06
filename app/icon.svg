@@ -1,15 +1,14 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Transparent background - no background element needed -->
-  
-  <!-- 3D Geometric Logo - Scaled up version of the BrandLogo -->
-  <g transform="translate(256, 256) scale(18)">
-    <!-- Top face (light purple) -->
-    <path d="M0 0L8 -4.5L0 -9L-8 -4.5L0 0Z" fill="#a78bfa"/>
-    
-    <!-- Right face (medium purple) -->
-    <path d="M0 0L8 -4.5V4.5L0 9V0Z" fill="#7c3aed"/>
-    
-    <!-- Left face (dark purple) -->
-    <path d="M0 0L-8 -4.5V4.5L0 9V0Z" fill="#6d28d9"/>
+  <!-- Modern Interlocking Brand Mark -->
+  <g transform="translate(256, 256)">
+    <g stroke="#7c3aed" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 6 Rotated Interlocking Elements -->
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(0)" />
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(60)" />
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(120)" />
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(180)" />
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(240)" />
+      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(300)" />
+    </g>
   </g>
 </svg>
