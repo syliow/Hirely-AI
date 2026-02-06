@@ -1,5 +1,7 @@
 # Hirely AI
 
+<img width="1559" height="964" alt="hirelyAIimg" src="https://github.com/user-attachments/assets/d1e74842-0570-47ae-920d-1a8e4daa08b7" />
+
 **An intelligent resume optimization platform that shows you exactly what ATS systems see.**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
