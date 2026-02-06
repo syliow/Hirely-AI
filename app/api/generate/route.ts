@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { FileData, RefactorOptions } from "@/lib/types";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
+import { checkRateLimit, getClientIdentifier, getRateLimitHeaders } from "@/lib/rateLimit";
 import { Buffer } from 'buffer';
 
 const SYSTEM_INSTRUCTION = `
@@ -54,6 +55,29 @@ FORMATTING RULES (CRITICAL):
 
 export async function POST(req: NextRequest) {
   try {
+    // 0. Rate Limiting
+    const identifier = getClientIdentifier(req);
+
+    // Check Minute Limit
+    const minuteLimit = checkRateLimit(identifier, 'minute');
+    if (minuteLimit.limited) {
+      const headers = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn, minuteLimit.retryAfter);
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, minuteLimit.retryAfter),
+        { status: 429, headers }
+      );
+    }
+
+    // Check Daily Limit
+    const dailyLimit = checkRateLimit(identifier, 'daily');
+    if (dailyLimit.limited) {
+      const headers = getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter);
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
+        { status: 429, headers }
+      );
+    }
+
     // 1. Validate content length first
     const contentLengthResult = validateContentLength(req.headers.get('content-length'));
     if (!contentLengthResult.valid) {
