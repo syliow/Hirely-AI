@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
 import { FileData, RefactorOptions } from "@/lib/types";
-import { checkRateLimit, getClientIdentifier, getRateLimitHeaders, RATE_LIMIT_ERROR } from "@/lib/rateLimit";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
 import { Buffer } from 'buffer';
@@ -64,10 +63,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Get client identifier for rate limiting
-    const clientId = getClientIdentifier(req);
-
-    // 5. Parse and validate request body
+    // 2. Parse and validate request body
     let body;
     try {
       body = await req.json();
@@ -78,33 +74,6 @@ export async function POST(req: NextRequest) {
       );
     }
     const { action, payload } = body;
-
-    // 3. Rate Limiting (Exempt 'chat' action)
-    let minuteLimit = { remaining: 30, resetIn: 0, retryAfter: 0 };
-    if (action !== 'chat') {
-      const check = checkRateLimit(clientId, 'minute');
-      if (check.limited) {
-        return NextResponse.json(
-          createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, check.retryAfter),
-          { 
-            status: 429,
-            headers: getRateLimitHeaders(check.remaining, check.resetIn, check.retryAfter)
-          }
-        );
-      }
-      minuteLimit = check;
-
-      const dailyLimit = checkRateLimit(clientId, 'daily');
-      if (dailyLimit.limited) {
-        return NextResponse.json(
-          createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
-          { 
-            status: 429,
-            headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
-          }
-        );
-      }
-    }
 
     // Validate request
     const validationResult = validateRequest(body);
@@ -219,8 +188,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       // Remove markdown code blocks if present
       jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
-      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
-      return NextResponse.json(JSON.parse(jsonText), { headers: responseHeaders });
+      return NextResponse.json(JSON.parse(jsonText));
     }
 
     if (action === 'refactor') {
@@ -236,8 +204,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
         // config: { systemInstruction: SYSTEM_INSTRUCTION }, // Removed
       });
       
-      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
-      return NextResponse.json({ text: response.text }, { headers: responseHeaders });
+      return NextResponse.json({ text: response.text });
     }
 
     if (action === 'chat') {
@@ -254,8 +221,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
         contents: chatContext,
       });
       
-      const responseHeaders = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn);
-      return NextResponse.json({ text: response.text }, { headers: responseHeaders });
+      return NextResponse.json({ text: response.text });
     }
 
     return NextResponse.json(

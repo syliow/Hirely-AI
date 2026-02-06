@@ -61,11 +61,6 @@ export default function Home() {
   const [tourActive, setTourActive] = useState(false);
   const [tourStep, setTourStep] = useState(0);
 
-  // --- Feature State: Limits ---
-  const [retryAfter, setRetryAfter] = useState<number>(0);
-
-  // --- Feature State: Security ---
-
 
   // --- Effects ---
   useEffect(() => {
@@ -75,21 +70,6 @@ export default function Home() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
-
-  useEffect(() => {
-    if (retryAfter > 0) {
-      const timer = setInterval(() => {
-        setRetryAfter(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [retryAfter]);
 
   // --- API Helper ---
   const callApi = async (action: string, payload: any) => {
@@ -102,17 +82,6 @@ export default function Home() {
     if (!res.ok) {
       const errorData: ApiError = await res.json();
       
-      if (errorData.errorCode === 'RATE_LIMIT_EXCEEDED') {
-        const waitTime = errorData.retryAfter || 60;
-        setRetryAfter(waitTime);
-        // User-friendly notification instead of harsh modal
-        setNotification({ type: 'error', message: "Whoa, slow down! Please try again in a few minutes." });
-        throw new Error('RATE_LIMIT');
-      }
-      if (errorData.errorCode === 'DAILY_LIMIT_EXCEEDED') {
-        setNotification({ type: 'error', message: "You've reached your daily limit. Come back tomorrow!" });
-        throw new Error('DAILY_LIMIT');
-      }
       if (errorData.errorCode === 'API_QUOTA_EXCEEDED') {
          setNotification({ type: 'error', message: "System is busy right now. Please try again in a few minutes." });
         throw new Error('QUOTA_EXCEEDED');
@@ -170,8 +139,8 @@ export default function Home() {
       const auditData = await callApi('audit', { file: selectedFile, jdText });
       setResult(auditData);
     } catch (err: any) {
-      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
-      if (!isLimitError) {
+      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
+      if (!isQuotaError) {
         setNotification({ 
           type: 'error', 
           message: "Audit failed. Check your internet connection or try a different file." 
@@ -228,8 +197,8 @@ export default function Home() {
         downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       }
     } catch (err: any) {
-      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
-      if (!isLimitError) {
+      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
+      if (!isQuotaError) {
         setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
       }
     } finally {
@@ -250,8 +219,8 @@ export default function Home() {
       const { text } = await callApi('chat', { messages: newMessages });
       setMessages(prev => [...prev, { role: 'model', text, timestamp: Date.now() }]);
     } catch (err: any) {
-      const isLimitError = ['RATE_LIMIT', 'DAILY_LIMIT', 'QUOTA_EXCEEDED'].includes(err.message);
-      if (!isLimitError) {
+      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
+      if (!isQuotaError) {
         setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
       }
     } finally {

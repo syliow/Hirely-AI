@@ -1,101 +1,177 @@
-# Hirely AI: AI Resume Builder & Reviewer
+# Hirely AI
 
-> ⚠️ **Note:** This application runs on the **Google Gemini Free Tier**.
-> You may experience occasional rate limits or "Quota Exceeded" errors during peak usage.
-> The application includes built-in rate limiting (30 requests/minute) to ensure fair access for all users.
+**An intelligent resume optimization platform that shows you exactly what ATS systems see.**
 
-**Hirely AI** is a professional career intelligence platform designed to bypass the "ATS black hole." It provides a high-fidelity simulation of how enterprise parsers see candidate data, coupled with smart editorial logic to transform weak resumes into quantifiable professional documents.
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Google Gemini](https://img.shields.io/badge/Google-Gemini-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
 
-## Core Features
+---
 
-- **ATS Simulation:** Strips CSS and layouts to reveal the **"Raw Bot View"**, providing a precise "Parsing Health Score" and flagging layout risks (e.g., columns, graphics).
-- **The XYZ Audit Engine:** Evaluates every bullet point against the Google-standard **XYZ formula**: _Accomplished [X] as measured by [Y], by doing [Z]._
-- **Strategic Keyword Mapping:** A weighted analyzer that identifies Skill Gaps and matches your core competencies to target Job Descriptions.
-- **Intelligent Refactoring:** Generates clean, semantic, single-column HTML resumes optimized for 100% parse-rate.
-- **AI Career Advisor:** A "Friendly but Solid" career partner (powered by Gemma 3) for interview prep, powered by a structured "Critique -> Rewrite" logic.
-- **Privacy-First Design:** Resumes are processed in memory and never stored permanently.
+## Overview
 
-## Tech Stack
+Most resume tools only check for keywords. Hirely AI goes further by simulating how Applicant Tracking Systems (ATS) actually parse resumes. This gives you a clear picture of what recruiters' systems extract from your resume and what they miss.
 
-- **Framework:** Next.js 15 (App Router)
+Studies show that approximately 75% of resumes are rejected by ATS before reaching human reviewers. Hirely AI helps ensure yours isn't one of them.
+
+## Key Features
+
+### ATS Parsing Simulation
+
+The core feature of Hirely AI is the "Raw Bot View" - a real-time simulation of how ATS systems read your resume. By stripping all formatting and CSS, you can see the exact plain text that automated systems extract.
+
+**What you get:**
+
+- Parsing Health Score indicating ATS compatibility
+- Layout risk detection for columns, tables, and graphics that confuse parsers
+- Side-by-side comparison of your formatted resume vs. what ATS sees
+
+### XYZ Formula Audit
+
+Every bullet point is evaluated against Google's proven impact formula:
+
+> Accomplished [X] as measured by [Y], by doing [Z]
+
+The AI analyzes your resume content and provides specific feedback on how to transform vague statements into quantifiable achievements.
+
+**Example transformation:**
+
+- Before: "Responsible for managing team projects"
+- After: "Led 5-person team to deliver 12 projects ahead of schedule, reducing delivery time by 30% through agile sprint optimization"
+
+### Strategic Keyword Analysis
+
+Hirely AI performs weighted keyword analysis to identify gaps between your resume and target job descriptions. This goes beyond simple keyword counting to understand which skills and competencies are most critical.
+
+### Resume Refactoring
+
+Generate ATS-optimized resumes in clean, semantic HTML format. The refactored resumes are designed for maximum parse accuracy while maintaining professional visual appeal.
+
+**Output options:**
+
+- Single-column layout optimized for ATS
+- Keyword-enhanced content
+- XYZ formula-compliant bullet points
+- Export to PDF or DOCX
+
+### AI Career Advisor
+
+Chat with an AI assistant for personalized career guidance, including interview preparation and resume improvement strategies.
+
+## Technical Architecture
+
+### Stack
+
+- **Framework:** Next.js 15 with App Router
 - **Frontend:** React 19, TypeScript
-- **AI LLM:** **Google Gemma 3 (4B-IT)** via `@google/genai`
-- **Styling:** Tailwind CSS (CDN), Lucide React icons
-- **Security:** Multi-layer XSS Sanitization, strict CSP, rate limiting, input validation
+- **AI Model:** Google Gemini 3 (4B-IT)
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **Security:** Input validation, XSS sanitization, Content Security Policy
 
-## Technical Highlights
+### Prompt Engineering Approach
 
-### 1. Specialized Prompt Engineering (Gemma 3 4B)
+Hirely AI demonstrates that smaller, faster models can deliver high-quality results when given structured guidance. Instead of relying on massive language models, we use a rules-based execution strategy:
 
-Instead of relying on massive models, Hirely AI proves that **smaller, faster models (4B)** can outperform giants when given structured guidance. We use a **"Rules-Based Execution"** prompt strategy:
+1. **Evaluate** - Identify weak points in resume content
+2. **Critique** - Explain specific issues
+3. **Rewrite** - Apply the XYZ formula and best practices
+4. **Verify** - Check for completeness and accuracy
 
-- **Strict Protocol:** "Evaluate -> Critique -> Rewrite -> Check Missing Data".
-- **Structured Output:** Forces the model to think in steps, ensuring high-quality advice without hallucination.
-- **Zero-Truncation:** Explicit instructions guarantee full, actionable rewrites for every bullet point.
+This structured approach ensures consistent, actionable feedback without hallucinations.
 
-### 2. Rapid Analysis Architecture
+### Security
 
-- **Audit Engine:** Switched to **Gemma 3 4B-IT** for blazing-fast performance.
-- **Smart Feedback:** Replaced generic "Thinking..." indicators with informative progress steps (e.g., "Extracting Raw Text...", "Analyzing Formatting...").
+- Strict input validation for file uploads (10MB limit, PDF/DOCX only)
+- Multi-layer XSS sanitization pipeline
+- Content Security Policy headers
+- Privacy-first design - resumes processed in memory, never stored
 
-### 3. Security & Rate Limiting
-
-To ensure service stability and prevent abuse:
-
-- **Rate Limiting:** 30 requests per minute (per IP).
-- **Input Validation:** Strict validation for file size (10MB) and MIME types (PDF, DOCX).
-- **Sanitization Pipeline:** Every string passes through an aggressive regex-based sanitizer (`helpers/security.ts`) stripping malicious code.
-- **User Feedback:** Clear, friendly UI notifications for quota warnings.
-
-## Setup
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- Google AI Studio API Key ([Get one here](https://aistudio.google.com/app/apikey))
+- Node.js 18 or higher
+- npm or yarn
+- Google AI Studio API key ([Get one free](https://aistudio.google.com/app/apikey))
 
-### Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-### Installation & Development
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/hirely-ai.git
+cd hirely-ai
+
 # Install dependencies
 npm install
+
+# Create environment file
+cp .env.local.example .env.local
+
+# Add your API key to .env.local
+# GEMINI_API_KEY=your_api_key_here
 
 # Run development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+Open [http://localhost:3000](http://localhost:3000) to start using Hirely AI.
 
 ### Production Build
 
 ```bash
-# Build for production
 npm run build
-
-# Start production server
 npm start
 ```
 
+## Usage
+
+1. **Upload your resume** - Supports PDF and DOCX formats
+2. **Optional: Add job description** - For targeted keyword analysis
+3. **Review the analysis** - Check your Parsing Health Score and Raw Bot View
+4. **Get AI feedback** - Review XYZ formula suggestions and keyword gaps
+5. **Generate optimized resume** - Export ATS-friendly version
+
 ## Deployment
 
-The application is configured for Netlify deployment with the following settings:
+The application is configured for deployment on Netlify or Vercel:
+
+**Netlify:**
 
 - Build command: `npm run build`
 - Publish directory: `.next`
 - Node version: 18+
 
-## API Usage Limits
+**Vercel:**
 
-To keep the service free and fair for everyone:
+- Framework preset: Next.js
+- Build command: `npm run build`
+- Output directory: `.next`
 
-- **Rate Limit:** 30 requests per minute per IP
-- **Daily Limit:** 50 requests per day per IP
-- **File Size Limit:** 10MB maximum
+Remember to add your `GEMINI_API_KEY` environment variable in your deployment platform's settings.
+
+## Roadmap
+
+- LinkedIn profile optimization
+- Cover letter generation tailored to job descriptions
+- Interview preparation assistant with mock interviews
+- Job match scoring algorithm
+- Resume version control and A/B testing
+
+## Contributing
+
+Contributions are welcome. Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgments
+
+Built with Google Gemini AI, Next.js, and modern web technologies to help job seekers navigate the ATS landscape more effectively.
