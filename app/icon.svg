@@ -1,14 +1,50 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Modern Interlocking Brand Mark -->
+  <defs>
+    <!-- Premium Gradient -->
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6" />
+      <stop offset="100%" style="stop-color:#6366f1" />
+    </linearGradient>
+    
+    <!-- Secondary Gradient for Overlap -->
+    <linearGradient id="secondaryGrad" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#a78bfa" />
+      <stop offset="100%" style="stop-color:#7c3aed" />
+    </linearGradient>
+    
+    <!-- Drop Shadow for Depth -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Polished Geometric Startup Mark -->
   <g transform="translate(256, 256)">
-    <g stroke="#7c3aed" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
-      <!-- 6 Rotated Interlocking Elements -->
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(0)" />
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(60)" />
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(120)" />
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(180)" />
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(240)" />
-      <path d="M-28.5,-90.4 C-28.5,-90.4 -92.2,-74.6 -108.7,0.4 C-113.8,23.5 -105.1,45.2 -105.1,45.2 L-42.3,10" transform="rotate(300)" />
+    <!-- Bottom Layer (Interlocking Part 1) -->
+    <path d="M80,140 L80,-20 C80,-53 53,-80 20,-80 L-140,-80" 
+          stroke="url(#secondaryGrad)" 
+          stroke-width="64" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+    
+    <!-- Top Layer (Part 2) with Shadow for Realism -->
+    <g filter="url(#shadow)">
+      <path d="M-80,-140 L-80,20 C-80,53 -53,80 -20,80 L140,80" 
+            stroke="url(#primaryGrad)" 
+            stroke-width="64" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
     </g>
+    
+    <!-- Central AI Glow Point (The "Optimization" Spark) -->
+    <circle cx="0" cy="0" r="12" fill="white" />
   </g>
 </svg>
