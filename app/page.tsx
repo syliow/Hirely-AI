@@ -99,11 +99,6 @@ export default function Home() {
     if (!res.ok) {
       const errorData: ApiError = await res.json();
       
-      if (errorData.errorCode === 'API_QUOTA_EXCEEDED') {
-         setNotification({ type: 'error', message: "System is busy right now. Please try again in a few minutes." });
-        throw new Error('QUOTA_EXCEEDED');
-      }
-      
       console.error('[API Error]', errorData);
       throw new Error(errorData.error || "Failed to communicate with AI");
     }
@@ -135,7 +130,14 @@ export default function Home() {
     setLoading(true);
     setResult(null);
     
-    const steps = ["Initializing Strategic Extraction...", "Detecting ATS Parsing Risks...", "Generating Compatibility Score...", "Finalizing Strategic Analysis..."];
+    const steps = [
+      "Reading your resume...", 
+      "Analyzing ATS compatibility...", 
+      "Identifying key skill gaps...", 
+      "Comparing against top candidates...", 
+      "Crafting personalized improvements...",
+      "Finalizing your audit report..."
+    ];
     let stepIdx = 0;
     setScanStep(steps[0]);
     const interval = setInterval(() => {
@@ -147,13 +149,11 @@ export default function Home() {
       const auditData = await callApi('audit', { file: selectedFile, jdText });
       setResult(auditData);
     } catch (err: any) {
-      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
-      if (!isQuotaError) {
-        setNotification({ 
-          type: 'error', 
-          message: "Audit failed. Check your internet connection or try a different file." 
-        });
-      }
+      console.error("Audit Error:", err);
+      setNotification({ 
+        type: 'error', 
+        message: err.message || "Audit failed. Check your internet connection or try a different file." 
+      });
     } finally {
       clearInterval(interval);
       setLoading(false);
@@ -205,10 +205,7 @@ export default function Home() {
         downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       }
     } catch (err: any) {
-      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
-      if (!isQuotaError) {
-        setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
-      }
+      setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
     } finally {
       setRefactoring(false);
     }
@@ -227,10 +224,7 @@ export default function Home() {
       const { text } = await callApi('chat', { messages: newMessages });
       setMessages(prev => [...prev, { role: 'model', text, timestamp: Date.now() }]);
     } catch (err: any) {
-      const isQuotaError = err.message === 'QUOTA_EXCEEDED';
-      if (!isQuotaError) {
-        setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
-      }
+      setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
     } finally {
       setChatLoading(false);
     }
