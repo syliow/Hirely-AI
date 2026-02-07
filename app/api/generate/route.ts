@@ -18,6 +18,8 @@ const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 const textCache = new Map<string, string>();
 const MAX_CACHE_SIZE = 50;
 
+let aiClient: GoogleGenAI | null = null;
+
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
 - Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
@@ -138,7 +140,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    if (!aiClient) {
+      aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+    const ai = aiClient;
 
     // Helper to extract text from files
     async function extractTextFromFile(file: FileData): Promise<string> {
