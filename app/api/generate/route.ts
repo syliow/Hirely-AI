@@ -20,6 +20,10 @@ const MAX_CACHE_SIZE = 50;
 
 let aiClient: GoogleGenAI | null = null;
 
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
 - Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
