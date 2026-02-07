@@ -107,11 +107,39 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse and validate request body
     let body;
+    const contentType = req.headers.get('content-type') || '';
+
     try {
-      body = await req.json();
-    } catch {
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await req.formData();
+        const action = formData.get('action') as string;
+        const payloadJson = formData.get('payload') as string;
+        const payload = payloadJson ? JSON.parse(payloadJson) : {};
+        
+        const file = formData.get('file') as File;
+        
+        if (file) {
+          // Convert File to base64
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const base64Data = buffer.toString('base64');
+          
+          payload.file = {
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+            data: base64Data
+          };
+        }
+        
+        body = { action, payload };
+      } else {
+        body = await req.json();
+      }
+    } catch (e) {
+      console.error("Body Parsing Error:", e);
       return NextResponse.json(
-        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid JSON in request body'),
+        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid request body parsing'),
         { status: 400 }
       );
     }
