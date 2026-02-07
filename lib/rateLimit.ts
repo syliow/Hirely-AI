@@ -12,9 +12,10 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Rate limit configuration
+// Rate limit configuration
 const RATE_LIMIT_CONFIG = {
   // Maximum requests per window (RPM Protection)
-  maxRequests: 30, // Updated for Gemma 3 27B (30 RPM)
+  maxRequests: 60, // Increased to 60 RPM to prevent false positives
   // Window duration in milliseconds (1 minute)
   windowMs: 60 * 1000,
   // Daily limit per IP (RPD Protection)
@@ -44,12 +45,14 @@ export function getClientIdentifier(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  const vercelIp = request.headers.get('x-vercel-forwarded-for');
   
-  // Use the first available IP or fall back to a default
+  // Use the first available IP or fall back to a random string if failing to prevent global blocking
   const ip = forwarded?.split(',')[0]?.trim() || 
              realIp || 
              cfConnectingIp || 
-             'anonymous';
+             vercelIp ||
+             `anonymous-${Math.random()}`; // Prevent shared rate limit for anonymous users
   
   return ip;
 }
