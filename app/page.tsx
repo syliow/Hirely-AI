@@ -96,13 +96,9 @@ export default function Home() {
   // --- Handlers ---
 
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleFileSelect = (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
       setNotification({ type: 'error', message: "File too large! Please upload a resume under 10MB." });
-      e.target.value = '';
       return;
     }
 
@@ -273,7 +269,7 @@ export default function Home() {
         ) : (
           <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-700">
             <UploadSection 
-              onFileUpload={handleFileUpload} 
+              onFileSelect={handleFileSelect}
               selectedFile={selectedFile} 
             />
             
