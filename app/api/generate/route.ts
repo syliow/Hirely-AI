@@ -6,6 +6,23 @@ import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
 import { checkRateLimit, getClientIdentifier, getRateLimitHeaders } from "@/lib/rateLimit";
 import { Buffer } from 'buffer';
+import { createRequire } from 'module';
+import { createHash } from 'crypto';
+
+const require = createRequire(import.meta.url);
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+
+// Simple in-memory cache for extracted text
+const textCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 50;
+
+let aiClient: GoogleGenAI | null = null;
+
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
@@ -55,26 +72,31 @@ FORMATTING RULES (CRITICAL):
 
 export async function POST(req: NextRequest) {
   try {
-    // 0. Rate Limiting
-    const identifier = getClientIdentifier(req);
+    // 0. Rate Limiting (Defense in Depth)
+    // NextRequest.ip is not always typed correctly in all Next.js versions
+    const identifier = (req as any).ip || getClientIdentifier(req);
 
-    // Check Minute Limit
-    const minuteLimit = checkRateLimit(identifier, 'minute');
-    if (minuteLimit.limited) {
-      const headers = getRateLimitHeaders(minuteLimit.remaining, minuteLimit.resetIn, minuteLimit.retryAfter);
+    // Check minute limit (30 RPM)
+    const rateLimit = checkRateLimit(identifier);
+    if (rateLimit.limited) {
       return NextResponse.json(
-        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, minuteLimit.retryAfter),
-        { status: 429, headers }
+        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, rateLimit.retryAfter),
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimit.remaining, rateLimit.resetIn, rateLimit.retryAfter)
+        }
       );
     }
 
-    // Check Daily Limit
+    // Check daily limit
     const dailyLimit = checkRateLimit(identifier, 'daily');
     if (dailyLimit.limited) {
-      const headers = getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter);
       return NextResponse.json(
         createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
-        { status: 429, headers }
+        {
+          status: 429,
+          headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
+        }
       );
     }
 
@@ -122,22 +144,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    if (!aiClient) {
+      aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+    const ai = aiClient;
 
     // Helper to extract text from files
     async function extractTextFromFile(file: FileData): Promise<string> {
       try {
+        // Secure Cache Key: SHA-256 of the entire file content (base64)
+        // This ensures uniqueness even if files have same name/size but different content
+        const cacheKey = createHash('sha256').update(file.data).digest('hex');
+
+        if (textCache.has(cacheKey)) {
+          // console.log('[Cache Hit]', file.name);
+          return textCache.get(cacheKey)!;
+        }
+
         const buffer = Buffer.from(file.data, 'base64');
         let text = "";
         
         if (file.mimeType.includes('pdf')) {
-          // pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
-          // @ts-ignore
-          const pdfParse = require('pdf-parse/lib/pdf-parse.js');
           const data = await pdfParse(buffer);
           text = data.text || '';
           console.log('[PDF] Extracted', text.length, 'characters from', data.numpages, 'pages');
         } else if (file.mimeType.includes('word') || file.mimeType.includes('docx') || file.mimeType.includes('officedocument')) {
+          // Lazy load mammoth for performance (optimize cold start)
           const mammothModule = await import('mammoth');
           const mammoth = (mammothModule as any).default || mammothModule;
           const result = await mammoth.extractRawText({ buffer });
@@ -150,6 +182,14 @@ export async function POST(req: NextRequest) {
         if (text.length < 50) {
           throw new Error("File contains insufficient text (likely a scanned image). Please use a text-based PDF/DOCX.");
         }
+
+        // Update cache
+        if (textCache.size >= MAX_CACHE_SIZE) {
+          // Evict oldest entry
+          const firstKey = textCache.keys().next().value;
+          if (firstKey) textCache.delete(firstKey);
+        }
+        textCache.set(cacheKey, text);
 
         return text;
       } catch (e: any) {

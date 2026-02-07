@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 export const HighlightedText = ({ text }: { text: string }) => {
-  const parts = text.split(/(\[ERR\].*?\[\/ERR\])/g);
+  const parts = useMemo(() => text.split(/(\[ERR\].*?\[\/ERR\])/g), [text]);
   return (
     <p className="text-sm text-slate-500 dark:text-slate-500 italic">
       "
