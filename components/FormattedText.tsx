@@ -1,18 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { parseTextSegments } from '@/helpers/textParser';
 
 export const FormattedText = ({ text }: { text: string }) => {
-  if (!text) return null;
+  const segments = useMemo(() => parseTextSegments(text), [text]);
 
-  // Process text into segments (paragraphs or lists)
-  const segments = text.split('\n\n');
+  if (!text) return null;
 
   return (
     <div className="space-y-4">
       {segments.map((segment, sIdx) => {
-        const lines = segment.split('\n');
-        
-        // Detect if this segment is a list
-        const isList = lines.every(line => /^[*-]\s|^\d+\.\s/.test(line.trim()));
+        const { isList, lines } = segment;
 
         if (isList) {
           return (
