@@ -73,10 +73,27 @@ export default function Home() {
 
   // --- API Helper ---
   const callApi = async (action: string, payload: any) => {
+    let body;
+    let headers: Record<string, string> = {};
+
+    if (payload?.file?.file instanceof File) {
+      const formData = new FormData();
+      formData.append('action', action);
+
+      const { file, ...restPayload } = payload;
+      formData.append('file', file.file);
+      formData.append('payload', JSON.stringify(restPayload));
+
+      body = formData;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ action, payload });
+    }
+
     const res = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, payload }),
+      headers,
+      body,
     });
     
     if (!res.ok) {
@@ -102,18 +119,13 @@ export default function Home() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = (event.target?.result as string).split(',')[1];
-      setSelectedFile({
-        name: file.name,
-        size: file.size,
-        data: base64,
-        mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-      });
-      setNotification(null);
-    };
-    reader.readAsDataURL(file);
+    setSelectedFile({
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+      file: file
+    });
+    setNotification(null);
   };
 
   const handleAudit = async () => {
