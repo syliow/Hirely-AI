@@ -4,7 +4,25 @@ import { GoogleGenAI } from "@google/genai";
 import { FileData, RefactorOptions } from "@/lib/types";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
+import { checkRateLimit, getClientIdentifier, getRateLimitHeaders } from "@/lib/rateLimit";
 import { Buffer } from 'buffer';
+import { createRequire } from 'module';
+import { createHash } from 'crypto';
+
+const require = createRequire(import.meta.url);
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+
+// Simple in-memory cache for extracted text
+const textCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 50;
+
+let aiClient: GoogleGenAI | null = null;
+
+// pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
+// @ts-ignore
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
 const SYSTEM_INSTRUCTION = `
 You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
@@ -54,6 +72,34 @@ FORMATTING RULES (CRITICAL):
 
 export async function POST(req: NextRequest) {
   try {
+    // 0. Rate Limiting (Defense in Depth)
+    // NextRequest.ip is not always typed correctly in all Next.js versions
+    const identifier = (req as any).ip || getClientIdentifier(req);
+
+    // Check minute limit (30 RPM)
+    const rateLimit = checkRateLimit(identifier);
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, rateLimit.retryAfter),
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimit.remaining, rateLimit.resetIn, rateLimit.retryAfter)
+        }
+      );
+    }
+
+    // Check daily limit
+    const dailyLimit = checkRateLimit(identifier, 'daily');
+    if (dailyLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
+        {
+          status: 429,
+          headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
+        }
+      );
+    }
+
     // 1. Validate content length first
     const contentLengthResult = validateContentLength(req.headers.get('content-length'));
     if (!contentLengthResult.valid) {
@@ -65,43 +111,11 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse and validate request body
     let body;
-    const contentType = req.headers.get('content-type') || '';
-
     try {
-      if (contentType.includes('multipart/form-data')) {
-        const formData = await req.formData();
-        const action = formData.get('action') as string;
-        const payloadStr = formData.get('payload') as string;
-        const file = formData.get('file') as File; // Web Standard File
-
-        const jsonPayload = JSON.parse(payloadStr || '{}');
-
-        // Construct FileData from the uploaded File
-        let fileData: FileData | undefined;
-        if (file) {
-          fileData = {
-            name: file.name,
-            size: file.size,
-            mimeType: file.type,
-            file: file
-          };
-        }
-
-        // Reconstruct body structure
-        body = {
-          action,
-          payload: {
-            ...jsonPayload,
-            ...(fileData ? { file: fileData } : {})
-          }
-        };
-
-      } else {
-        body = await req.json();
-      }
+      body = await req.json();
     } catch {
       return NextResponse.json(
-        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid request body'),
+        createErrorResponse(ERROR_CODES.INVALID_ACTION, 'Invalid JSON in request body'),
         { status: 400 }
       );
     }
@@ -130,31 +144,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    if (!aiClient) {
+      aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+    const ai = aiClient;
 
     // Helper to extract text from files
     async function extractTextFromFile(file: FileData): Promise<string> {
       try {
-        let buffer: Buffer;
-        if (file.file) {
-          const arrayBuffer = await file.file.arrayBuffer();
-          buffer = Buffer.from(arrayBuffer);
-        } else if (file.data) {
-          buffer = Buffer.from(file.data, 'base64');
-        } else {
-          throw new Error("No file content found");
+        // Secure Cache Key: SHA-256 of the entire file content (base64)
+        // This ensures uniqueness even if files have same name/size but different content
+        const cacheKey = createHash('sha256').update(file.data).digest('hex');
+
+        if (textCache.has(cacheKey)) {
+          // console.log('[Cache Hit]', file.name);
+          return textCache.get(cacheKey)!;
         }
 
+        const buffer = Buffer.from(file.data, 'base64');
         let text = "";
         
         if (file.mimeType.includes('pdf')) {
-          // pdf-parse v1.1.1 - require lib directly to bypass index.js debug mode bug
-          // @ts-ignore
-          const pdfParse = require('pdf-parse/lib/pdf-parse.js');
           const data = await pdfParse(buffer);
           text = data.text || '';
           console.log('[PDF] Extracted', text.length, 'characters from', data.numpages, 'pages');
         } else if (file.mimeType.includes('word') || file.mimeType.includes('docx') || file.mimeType.includes('officedocument')) {
+          // Lazy load mammoth for performance (optimize cold start)
           const mammothModule = await import('mammoth');
           const mammoth = (mammothModule as any).default || mammothModule;
           const result = await mammoth.extractRawText({ buffer });
@@ -167,6 +182,14 @@ export async function POST(req: NextRequest) {
         if (text.length < 50) {
           throw new Error("File contains insufficient text (likely a scanned image). Please use a text-based PDF/DOCX.");
         }
+
+        // Update cache
+        if (textCache.size >= MAX_CACHE_SIZE) {
+          // Evict oldest entry
+          const firstKey = textCache.keys().next().value;
+          if (firstKey) textCache.delete(firstKey);
+        }
+        textCache.set(cacheKey, text);
 
         return text;
       } catch (e: any) {
