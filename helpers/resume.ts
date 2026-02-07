@@ -1,3 +1,4 @@
+import { escapeHtml, sanitizeHtml } from "./security";
 
 export const extractCandidateName = (html: string): string => {
   const nameMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
@@ -9,7 +10,7 @@ export const generateResumeTemplate = (content: string, title: string): string =
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
     body { 
@@ -62,7 +63,7 @@ export const generateResumeTemplate = (content: string, title: string): string =
     <strong>✨ Your High-Performance Resume is Ready!</strong><br/>
     Use <code>Ctrl+P</code> or <code>Cmd+P</code> to save this document as a professional PDF.
   </div>
-  ${content}
+  ${sanitizeHtml(content)}
 </body>
 </html>
 `;
