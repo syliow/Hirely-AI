@@ -67,6 +67,7 @@ export interface Message {
 export interface FileData {
   name: string;
   size: number;
-  data: string; // base64
+  data?: string; // base64
+  file?: File;
   mimeType: string;
 }

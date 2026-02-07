@@ -51,7 +51,10 @@ export function validateFileData(file: unknown): ValidationResult {
 
   const fileObj = file as Record<string, unknown>;
 
-  if (!fileObj.data || typeof fileObj.data !== 'string') {
+  const hasData = typeof fileObj.data === 'string';
+  const hasFile = fileObj.file && typeof fileObj.file === 'object';
+
+  if (!hasData && !hasFile) {
     return { valid: false, error: 'Invalid file data format', errorCode: 'INVALID_FILE_DATA' };
   }
 
@@ -67,8 +70,15 @@ export function validateFileData(file: unknown): ValidationResult {
     };
   }
 
-  // Estimate base64 size (base64 is ~4/3 of original size)
-  const estimatedSize = (fileObj.data.length * 3) / 4;
+  // Calculate size
+  let estimatedSize = 0;
+  if (hasData) {
+    // Estimate base64 size (base64 is ~4/3 of original size)
+    estimatedSize = ((fileObj.data as string).length * 3) / 4;
+  } else if (typeof fileObj.size === 'number') {
+    estimatedSize = fileObj.size;
+  }
+
   if (estimatedSize > MAX_FILE_SIZE) {
     return { 
       valid: false, 
