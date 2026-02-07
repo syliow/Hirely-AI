@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { FileData, RefactorOptions } from "@/lib/types";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
+import { checkRateLimit, getClientIdentifier, getRateLimitHeaders } from "@/lib/rateLimit";
 import { Buffer } from 'buffer';
 
 const SYSTEM_INSTRUCTION = `
@@ -54,6 +55,34 @@ FORMATTING RULES (CRITICAL):
 
 export async function POST(req: NextRequest) {
   try {
+    // 0. Rate Limiting (Defense in Depth)
+    // NextRequest.ip is not always typed correctly in all Next.js versions
+    const identifier = (req as any).ip || getClientIdentifier(req);
+
+    // Check minute limit (30 RPM)
+    const rateLimit = checkRateLimit(identifier);
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.RATE_LIMIT_EXCEEDED, undefined, rateLimit.retryAfter),
+        {
+          status: 429,
+          headers: getRateLimitHeaders(rateLimit.remaining, rateLimit.resetIn, rateLimit.retryAfter)
+        }
+      );
+    }
+
+    // Check daily limit
+    const dailyLimit = checkRateLimit(identifier, 'daily');
+    if (dailyLimit.limited) {
+      return NextResponse.json(
+        createErrorResponse(ERROR_CODES.DAILY_LIMIT_EXCEEDED, undefined, dailyLimit.retryAfter),
+        {
+          status: 429,
+          headers: getRateLimitHeaders(dailyLimit.remaining, dailyLimit.resetIn, dailyLimit.retryAfter)
+        }
+      );
+    }
+
     // 1. Validate content length first
     const contentLengthResult = validateContentLength(req.headers.get('content-length'));
     if (!contentLengthResult.valid) {
