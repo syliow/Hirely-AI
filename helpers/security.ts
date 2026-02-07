@@ -21,3 +21,16 @@ export const sanitizeHtml = (html: string): string => {
     // 5. Basic cleanup for common malformed tags
     .trim();
 };
+
+/**
+ * Escapes HTML special characters to prevent XSS when inserting text into HTML.
+ */
+export const escapeHtml = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
