@@ -53,17 +53,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
 
   return (
     <>
-      <button id="hirely-fab" onClick={() => setOpen(!open)} className={`fixed bottom-10 right-10 w-20 h-20 rounded-full bg-violet-500 text-white shadow-3xl shadow-violet-500/40 hover:scale-110 active:scale-95 transition-all z-[110] flex items-center justify-center group ${open ? 'rotate-90 bg-slate-800 dark:bg-white text-white dark:text-slate-900' : ''}`}>
-        {open ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
-        {!open && <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 border-4 border-white dark:border-[#020617] rounded-full animate-bounce" />}
+      <button id="hirely-fab" onClick={() => setOpen(!open)} className={`fixed bottom-4 right-4 md:bottom-10 md:right-10 w-16 h-16 md:w-20 md:h-20 rounded-full bg-violet-500 text-white shadow-3xl shadow-violet-500/40 hover:scale-110 active:scale-95 transition-all z-[110] flex items-center justify-center group ${open ? 'rotate-90 bg-slate-800 dark:bg-white text-white dark:text-slate-900' : ''}`}>
+        {open ? <X className="w-6 h-6 md:w-8 md:h-8" /> : <MessageSquare className="w-6 h-6 md:w-8 md:h-8" />}
+        {!open && <div className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-rose-500 border-4 border-white dark:border-[#020617] rounded-full animate-bounce" />}
       </button>
 
-      <div className={`fixed bottom-36 right-10 w-[480px] max-w-[calc(100%-4rem)] h-[720px] max-h-[calc(100vh-200px)] bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/10 shadow-3xl transition-all duration-300 z-[100] flex flex-col rounded-[56px] overflow-hidden ${open ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95 pointer-events-none'}`}>
-        <div className="p-10 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/50 dark:bg-[#080d1a]/50">
-          <div className="flex items-center gap-5">
-            <BrandLogo size={28} className="w-14 h-14" />
+      <div className={`fixed bottom-24 right-4 w-[calc(100vw-2rem)] md:bottom-36 md:right-10 md:w-[480px] h-[60vh] md:h-[720px] max-h-[calc(100vh-140px)] md:max-h-[calc(100vh-200px)] bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/10 shadow-3xl transition-all duration-300 z-[100] flex flex-col rounded-[32px] md:rounded-[56px] overflow-hidden ${open ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95 pointer-events-none'}`}>
+        <div className="p-6 md:p-10 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/50 dark:bg-[#080d1a]/50">
+          <div className="flex items-center gap-3 md:gap-5">
+            <BrandLogo size={28} className="w-10 h-10 md:w-14 md:h-14" />
             <div>
-              <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-widest leading-none mb-2">Hirely AI Advisor</h3>
+              <h3 className="font-black text-xs md:text-base text-slate-900 dark:text-white uppercase tracking-widest leading-none mb-2">Hirely AI Advisor</h3>
               <p className="text-xs text-emerald-500 font-bold uppercase tracking-widest flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> I'm always here to help!
               </p>
