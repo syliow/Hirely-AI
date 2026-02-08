@@ -252,7 +252,7 @@ export default function Home() {
         isDarkMode={isDarkMode} 
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full p-10 lg:p-14 space-y-16 overflow-y-auto custom-scrollbar">
+      <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-10 lg:p-14 space-y-8 md:space-y-16 overflow-y-auto custom-scrollbar">
         
         <StrategySettings 
           showSettings={showSettings} 
