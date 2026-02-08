@@ -2,7 +2,7 @@ import { escapeHtml, sanitizeHtml } from "./security";
 
 export const extractCandidateName = (html: string): string => {
   const nameMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-  return nameMatch ? nameMatch[1].replace(/<[^>]*>/g, '').trim() : "Optimized Resume";
+  return nameMatch ? sanitizeHtml(nameMatch[1]).replace(/<|>/g, '').trim() : "Optimized Resume";
 };
 
 export const generateResumeTemplate = (content: string, title: string): string => `
