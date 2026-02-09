@@ -1,7 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { parseTextSegments } from '@/helpers/textParser';
 
-export const FormattedText = ({ text }: { text: string }) => {
+const MARKDOWN_REGEX = /(\*\*.*?\*\*|\*.*?\*)/g;
+const LIST_REPLACEMENT_REGEX = /^[*-]\s|^\d+\.\s/;
+
+export const FormattedText = memo(({ text }: { text: string }) => {
   const segments = useMemo(() => parseTextSegments(text), [text]);
 
   if (!text) return null;
@@ -16,7 +19,7 @@ export const FormattedText = ({ text }: { text: string }) => {
             <ul key={sIdx} className="space-y-3 my-4 ml-6 list-disc marker:text-violet-500">
               {lines.map((line, lIdx) => (
                 <li key={lIdx} className="pl-2">
-                  {renderLine(line.trim().replace(/^[*-]\s|^\d+\.\s/, ''))}
+                  {renderLine(line.trim().replace(LIST_REPLACEMENT_REGEX, ''))}
                 </li>
               ))}
             </ul>
@@ -36,11 +39,13 @@ export const FormattedText = ({ text }: { text: string }) => {
       })}
     </div>
   );
-};
+});
+
+FormattedText.displayName = 'FormattedText';
 
 function renderLine(line: string) {
   // Simple markdown renderer for bold and italics
-  return line.split(/(\*\*.*?\*\*|\*.*?\*)/g).map((part, i) => {
+  return line.split(MARKDOWN_REGEX).map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
         <strong key={i} className="font-bold text-slate-900 dark:text-white border-b border-violet-500/10">

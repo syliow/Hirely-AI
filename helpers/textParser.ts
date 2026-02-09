@@ -3,6 +3,8 @@ export interface TextSegment {
   lines: string[];
 }
 
+const LIST_ITEM_REGEX = /^[*-]\s|^\d+\.\s/;
+
 export const parseTextSegments = (text: string): TextSegment[] => {
   if (!text) return [];
 
@@ -13,7 +15,7 @@ export const parseTextSegments = (text: string): TextSegment[] => {
     const lines = segment.split('\n');
 
     // Detect if this segment is a list
-    const isList = lines.every(line => /^[*-]\s|^\d+\.\s/.test(line.trim()));
+    const isList = lines.every(line => LIST_ITEM_REGEX.test(line.trim()));
 
     return {
       isList,
