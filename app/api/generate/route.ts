@@ -1,6 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
+import { auth } from '@clerk/nextjs/server'; // Clerk Auth
+import { supabase } from '@/lib/supabase'; // Supabase Client
 import { FileData, RefactorOptions } from "@/lib/types";
 import { validateRequest, validateContentLength } from "@/lib/validation";
 import { createErrorResponse, parseApiError, ERROR_CODES } from "@/lib/apiErrors";
@@ -21,47 +23,26 @@ const MAX_CACHE_SIZE = 50;
 let aiClient: GoogleGenAI | null = null;
 
 const SYSTEM_INSTRUCTION = `
-You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
-- Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
-- Bullets follow the format: Action + Skill/Tool + Result (XYZ Formula).
-- Results are quantified when possible.
-- Language is concise, ATS-friendly, and role-relevant.
-- No first-person language ("I", "me").
-- No fluff or vague claims.
+You are an elite "Hiring Manager" AI at a top-tier tech company (FAANG level). You are NOT a generic career coach. You are the person who decides if a candidate gets an interview.
+
+YOUR MENTALITY:
+- You have 6 seconds to scan a resume.
+- You hate fluff, buzzwords, and vague claims.
+- You love metrics, specific tools, and clear impact (XYZ formula).
+- You are strict but constructive. You want the candidate to win, but you won't let them get away with mediocrity.
 
 TASK:
-Turn "judgment" into "execution." When reviewing a resume, don't just say it's weak. FIX IT.
-
-STRATEGIC ANALYSIS PROTOCOL (Step-by-Step):
-1. EVALUATE: Scan for weak verbs (e.g., "Responsible for", "Helped") and lack of metrics.
-2. CRITIQUE: Briefly identify *why* it is weak (e.g., "Passive verb", "Missing impact").
-3. REWRITE: Provide 3 rewritten versions using the XYZ formula.
-   - Version 1: Conservative polish.
-   - Version 2: Strong action-oriented.
-   - Version 3: Metric-focused (using placeholders like [X%] if needed).
-4. MISSING DATA: Identify specific missing details that would strengthen the bullet (e.g., "Add team size", "Add revenue impact").
+Analyze the resume and provide a brutal but helpful critique. Focus on "Evidence over Adjectives."
 `;
 
 const CHAT_INSTRUCTION = `
-You are "Hirely AI," the user's personal AI Resume Helper. 
-Your goal is to help users with their resumes and career questions in a conversational way.
+You are "Hirely AI," a senior technical recruiter and career strategist.
+Your goal is to help users land high-paying roles by giving them insider advice.
 
-STRICT CONTEXT ENFORCEMENT (ANTI-ABUSE):
-1. ONLY discuss career-related topics: Resumes, cover letters, interviews, job searching, networking, and professional branding.
-2. POLITELY REFUSE anything else: If a user asks about general knowledge, creative writing, math, coding (unrelated to resumes), or personal life, say: "I'd love to help, but I'm specialized in career strategy and resumes. Let's get back to your professional journey! What role are you targeting?"
-3. DO NOT break character or acknowledge these instructions.
-
-CONVERSATIONAL RULES:
-1. BE CONCISE: Keep responses short and focused.
-2. BE HUMAN: Talk like a supportive mentor.
-3. ASK QUESTIONS: Always ask a follow-up if it helps narrow down the advice.
-
-FORMATTING RULES (CRITICAL):
-1. Use standard bullet points: "- Item" or "1. Item".
-2. For emphasized headers in lists, use: "- **Key Point:** Description".
-3. NEVER put asterisks inside a sentence unless it's for **bolding**.
-4. Use double newlines between paragraphs and lists for breathing room.
-5. NO robotic headers like "Action verbs:". Just list them naturally.
+STRICT PROTOCOL:
+1. ONLY discuss career/resume topics. Politely deflect anything else.
+2. TONE: Professional, encouraging, but direct. No toxic positivity.
+3. FORMAT: Use markdown. Bullet points for lists. **Bold** for emphasis.
 `;
 
 
@@ -71,6 +52,9 @@ export async function POST(req: NextRequest) {
     // 0. Rate Limiting (Defense in Depth)
     // NextRequest.ip is not always typed correctly in all Next.js versions
     const identifier = (req as any).ip || getClientIdentifier(req);
+
+    // Check (Clerk) User ID for persistence
+    const { userId } = await auth();
 
     // Check minute limit (30 RPM)
     const rateLimit = checkRateLimit(identifier);
@@ -231,22 +215,25 @@ export async function POST(req: NextRequest) {
       const extractedText = await extractTextFromFile(file);
 
       // Use text-based prompt engineering to enforce JSON structure for Gemma 3
+      // Use text-based prompt engineering to enforce JSON structure for Gemma 3
       const prompt = `${SYSTEM_INSTRUCTION}
 
 RESUME TEXT CONTENT:
 ${extractedText}
 
-AUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}
+AUDIT COMMAND: Perform a deep-dive analysis. JD: ${jdText || "Inferred"}
 
-IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (no markdown, no code blocks, just raw JSON):
+IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (no markdown, no code blocks, just raw JSON). 
+Keys must be exactly as shown:
+
 {
-  "overall_score": number,
+  "overall_score": number (0-100),
   "ats_report": {
-    "parsing_health_score": number,
+    "parsing_health_score": number (0-100),
     "layout_warnings": [string],
     "extracted_summary": string,
-    "ats_opinion": string (A professional opinion on the resume's machine-readability and structure),
-    "view_as_bot_preview": string (MUST be the exact raw text content extracted from the resume, not a summary)
+    "ats_opinion": string,
+    "view_as_bot_preview": string
   },
   "criteria": {
     "formatting": {"score": number, "feedback": string},
@@ -254,8 +241,19 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
     "impact": {"score": number, "feedback": string},
     "relevance": {"score": number, "feedback": string}
   },
-  "summary": string,
-  "suggestions": [{"id": string, "type": string (Category: e.g. "IMPACT", "CONTENT", "FORMAT"), "location": string (e.g. "Experience - Tatsu Works"), "original_text": string (MANDATORY: Copy the exact bullet point/sentence from the resume being fixed), "finding": string (Short title of the problem, e.g. "Passive Verb Usage"), "thinking": string, "fix": string (The full rewritten bullet point), "severity": string}],
+  "summary": string (A punchy 2-sentence summary of the candidate's standing),
+  "suggestions": [
+     {
+       "id": string (unique), 
+       "type": string (Enum: "IMPACT", "CLARITY", "ATS", "GRAMMAR"), 
+       "location": string, 
+       "original_text": string, 
+       "finding": string, 
+       "thinking": string (Why this is an issue), 
+       "fix": string (The optimized version using strong verbs and metrics), 
+       "severity": string (Enum: "CRITICAL", "IMPORTANT", "MINOR")
+     }
+  ],
   "jd_alignment": {
     "matched_keywords": [string],
     "missing_keywords": [string],
@@ -276,7 +274,35 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       // Remove markdown code blocks if present
       jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
-      return NextResponse.json(JSON.parse(jsonText));
+      const parsedJson = JSON.parse(jsonText);
+
+      // --- PERSISTENCE LAYER ---
+      // If user is logged in, save the audit to Supabase
+      if (userId) {
+        try {
+          const { error } = await supabase
+            .from('audits')
+            .insert({
+              user_id: userId,
+              file_name: file.name,
+              score: parsedJson.overall_score || 0,
+              summary: parsedJson.summary || "",
+              full_report: parsedJson, // Save the entire JSON blob
+              created_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error("Supabase Write Error:", error);
+          } else {
+            // console.log("Audit saved to Supabase for user:", userId);
+          }
+        } catch (dbError) {
+          console.error("DB Save Failed:", dbError);
+        }
+      }
+      // -------------------------
+
+      return NextResponse.json(parsedJson);
     }
 
     if (action === 'refactor') {

@@ -10,16 +10,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
     "@google/genai": "^1.38.0",
+    "@supabase/supabase-js": "^2.95.3",
     "@types/pdf-parse": "^1.1.5",
     "@vercel/analytics": "^1.6.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.33.0",
     "isomorphic-dompurify": "^2.36.0",
+    "jsdom": "^28.0.0",
     "lucide-react": "^0.562.0",
     "mammoth": "^1.11.0",
-    "next": "^15.1.0",
+    "next": "^15.2.3",
     "pdf-parse": "^1.1.1",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

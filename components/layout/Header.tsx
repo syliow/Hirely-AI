@@ -1,30 +1,88 @@
+"use client";
+
 import React from 'react';
+import Link from 'next/link';
 import { BrandLogo } from '@/components/BrandLogo';
-import { PlayCircle, Sun, Moon } from 'lucide-react';
+import { PlayCircle, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
-  onReset: () => void;
-  onStartTour: () => void;
+  onReset?: () => void;
+  onStartTour?: () => void;
   onToggleTheme: () => void;
   isDarkMode: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onReset, onStartTour, onToggleTheme, isDarkMode }) => {
   return (
-    <header className="h-16 md:h-20 border-b border-slate-200 dark:border-white/5 flex items-center px-4 md:px-10 lg:px-20 justify-between sticky top-0 bg-white/90 dark:bg-[#020617]/90 backdrop-blur-2xl z-50">
-      <div id="header-brand" className="flex items-center gap-3 md:gap-6 group cursor-pointer" onClick={onReset}>
-        <BrandLogo size={36} className="w-10 h-10 md:w-14 md:h-14" />
-        <span className="text-xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">HIRELY<span className="text-violet-500">.AI</span></span>
+    <motion.header 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="h-16 md:h-20 border-b border-border/40 flex items-center px-4 md:px-10 lg:px-20 justify-between sticky top-0 bg-background/80 backdrop-blur-2xl z-50 supports-[backdrop-filter]:bg-background/60"
+    >
+      <div className="flex items-center gap-2 md:gap-8">
+        <Link href="/" onClick={onReset} className="flex items-center gap-3 group">
+          <BrandLogo size={32} className="w-8 h-8 md:w-10 md:h-10" />
+          <span className="hidden md:block text-xl md:text-2xl font-black tracking-tighter text-foreground uppercase">
+            HIRELY<span className="text-primary text-gradient">.AI</span>
+          </span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground ml-4">
+          <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+          <Link href="/features" className="hover:text-foreground transition-colors">Features</Link>
+        </nav>
       </div>
       
-      <div className="flex items-center gap-8">
-        <button onClick={onStartTour} className="hidden sm:flex items-center gap-4 px-8 py-4 text-sm font-black uppercase tracking-widest text-violet-500 hover:text-violet-400 transition-colors bg-violet-500/10 rounded-3xl border border-violet-500/20 shadow-sm">
-          <PlayCircle className="w-5 h-5" /> Quick Tour
-        </button>
-        <button onClick={onToggleTheme} className="p-4 text-slate-400 hover:text-violet-500 transition-colors bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
-          {isDarkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+      <div className="flex items-center gap-4">
+        <SignedIn>
+          <Link 
+            href="/dashboard" 
+            className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-full"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
+          </Link>
+          <UserButton 
+            afterSignOutUrl="/" 
+            appearance={{
+              elements: {
+                avatarBox: "w-9 h-9 border-2 border-primary/20"
+              }
+            }}
+          />
+        </SignedIn>
+
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button className="px-5 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-full transition-all shadow-lg hover:shadow-primary/25">
+              Sign In
+            </button>
+          </SignInButton>
+        </SignedOut>
+
+        <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
+
+        {onStartTour && (
+          <button 
+            onClick={onStartTour} 
+            className="hidden sm:flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors bg-muted/50 hover:bg-muted rounded-lg"
+          >
+            <PlayCircle className="w-4 h-4" /> Tour
+          </button>
+        )}
+
+        <button 
+          onClick={onToggleTheme} 
+          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted"
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
       </div>
-    </header>
+    </motion.header>
   );
 };

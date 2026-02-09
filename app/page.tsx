@@ -23,6 +23,7 @@ import { JobDescriptionSection } from '@/components/features/audit/JobDescriptio
 import { LoadingScreen } from '@/components/features/audit/LoadingScreen';
 import { AuditResults } from '@/components/features/results/AuditResults';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { motion } from 'framer-motion';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
