@@ -45,8 +45,8 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({ active, step, onClose,
   if (!active) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-8 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-[#0f172a] border border-violet-500/20 rounded-[56px] p-14 max-w-2xl w-full shadow-2xl space-y-12 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-500">
+      <div className="bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-[48px] p-12 max-w-2xl w-full shadow-2xl space-y-10 animate-in zoom-in-95 duration-300 ring-1 ring-white/20">
         <div className="flex flex-col items-center text-center space-y-8">
           <div className="w-24 h-24 rounded-[32px] bg-violet-500/10 flex items-center justify-center shadow-inner">
             {TOUR_STEPS[step].icon}

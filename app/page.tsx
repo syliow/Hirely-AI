@@ -1,69 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-
-// API & Types
-import { AuditResult, Message, FileData, RefactorOptions } from '@/lib/types';
-import { ApiError } from '@/lib/apiErrors';
-
-// Helpers
-import { openInNewTab, downloadFile } from '@/helpers/browser';
-import { extractCandidateName, generateResumeTemplate } from '@/helpers/resume';
-import { cleanAIHtml } from '@/helpers/string';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { TrendingUp, ArrowRight, Upload } from 'lucide-react';
 
 // Components
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/Footer';
-import { Notification } from '@/components/ui/Notification';
-
-import { StrategySettings } from '@/components/features/settings/StrategySettings';
-import { TourOverlay } from '@/components/features/tour/TourOverlay';
-import { UploadSection } from '@/components/features/upload/UploadSection';
-import { JobDescriptionSection } from '@/components/features/audit/JobDescriptionSection';
-import { LoadingScreen } from '@/components/features/audit/LoadingScreen';
-import { AuditResults } from '@/components/features/results/AuditResults';
-import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { motion } from 'framer-motion';
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import { FeaturesSection } from '@/components/landing/FeaturesSection';
+import { PricingSection } from '@/components/landing/PricingSection';
 
 export default function Home() {
-  // --- Global UI State ---
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [notification, setNotification] = useState<{ type: 'error' | 'success', message: string } | null>(null);
-  
-  // --- Data State ---
-  const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
-  const [jdText, setJdText] = useState('');
-  const [result, setResult] = useState<AuditResult | null>(null);
-  const [readyHtml, setReadyHtml] = useState<string | null>(null);
 
-  // --- Process State ---
-  const [loading, setLoading] = useState(false);
-  const [refactoring, setRefactoring] = useState(false);
-  const [scanStep, setScanStep] = useState('');
-
-  // --- Feature State: Chat ---
-  const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Hi! I'm Hirely AI, your personal AI Resume Helper. I'm ready to help you craft the best resume possible! Shall we take a look at your profile?", timestamp: Date.now() }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-
-  // --- Feature State: Settings ---
-  const [showSettings, setShowSettings] = useState(false);
-  const [refactorSettings, setRefactorSettings] = useState<RefactorOptions>({
-    level: 'junior',
-    jdAlignment: 100
-  });
-
-  // --- Feature State: Tour ---
-  const [tourActive, setTourActive] = useState(false);
-  const [tourStep, setTourStep] = useState(0);
-
-
-  // --- Effects ---
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -72,234 +22,118 @@ export default function Home() {
     }
   }, [isDarkMode]);
 
-  // --- API Helper ---
-  const callApi = async (action: string, payload: any) => {
-    let body;
-    let headers: Record<string, string> = {};
-
-    if (payload?.file?.file instanceof File) {
-      const formData = new FormData();
-      formData.append('action', action);
-
-      const { file, ...restPayload } = payload;
-      formData.append('file', file.file);
-      formData.append('payload', JSON.stringify(restPayload));
-
-      body = formData;
-    } else {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({ action, payload });
-    }
-
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers,
-      body,
-    });
-    
-    if (!res.ok) {
-      const errorData: ApiError = await res.json();
+  // --- Render Helpers ---
+  const LandingHero = () => (
+    <div className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden pt-20">
       
-      console.error('[API Error]', errorData);
-      throw new Error(errorData.error || "Failed to communicate with AI");
-    }
-    return res.json();
-  };
+      {/* Background Elements */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[150px] animate-pulse-slow pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-  // --- Handlers ---
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10 max-w-5xl mx-auto space-y-8"
+      >
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-slate-300 text-xs font-bold uppercase tracking-widest mb-4 hover:bg-white/10 transition-colors cursor-default">
+           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> AI 2.0 Now Live
+        </div>
 
-  
-  const handleFileSelect = (file: File) => {
-    if (file.size > MAX_FILE_SIZE) {
-      setNotification({ type: 'error', message: "File too large! Please upload a resume under 10MB." });
-      return;
-    }
+        <h1 className="text-5xl/tight md:text-8xl/tight font-black tracking-tighter text-white">
+          Your Resume, <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-400 to-purple-400 animate-gradient">
+            But Unignorable.
+          </span>
+        </h1>
+        
+        <p className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+          The only AI resume auditor engineered by <span className="text-white font-bold">real hiring managers</span>. 
+          Get the exact feedback you need to land interviews at top tech companies.
+        </p>
 
-    setSelectedFile({
-      name: file.name,
-      size: file.size,
-      mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
-      file: file
-    });
-    setNotification(null);
-  };
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+          <Link href="/app" className="group relative px-8 py-5 bg-white text-slate-950 font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] flex items-center gap-2">
+             <span className="relative z-10 flex items-center gap-2">
+               Upload Resume <Upload className="w-4 h-4" />
+             </span>
+          </Link>
+          
+          <Link href="/app" className="px-8 py-5 bg-transparent border border-white/10 text-white font-bold text-sm uppercase tracking-widest rounded-2xl hover:bg-white/5 transition-all flex items-center gap-2">
+            Try Demo <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
 
-  const handleAudit = async () => {
-    if (!selectedFile) return;
+        {/* Visual Mockup */}
+        <motion.div 
+          initial={{ opacity: 0, y: 50, rotateX: 10 }}
+          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          transition={{ delay: 0.4, duration: 1 }}
+          className="mt-20 relative w-full max-w-4xl mx-auto aspect-video bg-slate-900 rounded-t-[32px] border-t border-x border-white/10 shadow-2xl overflow-hidden group"
+        >
+           <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 z-0" />
+           
+           {/* UI Mockup Content */}
+           <div className="relative z-10 p-8 grid grid-cols-12 gap-6 h-full opacity-60 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="col-span-4 space-y-4">
+                 <div className="h-32 rounded-2xl bg-white/5 border border-white/5" />
+                 <div className="h-64 rounded-2xl bg-white/5 border border-white/5" />
+              </div>
+              <div className="col-span-8 space-y-4">
+                 <div className="h-12 w-3/4 rounded-xl bg-violet-500/20 border border-violet-500/30" />
+                 <div className="space-y-2">
+                    <div className="h-4 w-full rounded bg-white/5" />
+                    <div className="h-4 w-5/6 rounded bg-white/5" />
+                    <div className="h-4 w-4/6 rounded bg-white/5" />
+                 </div>
+                 <div className="h-48 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mt-8 relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <span className="text-5xl font-black text-emerald-500">92%</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
 
+           {/* Floating Badge */}
+           <motion.div 
+             animate={{ y: [0, -10, 0] }}
+             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute top-1/4 -right-8 bg-slate-800/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl z-20"
+           >
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">A+</div>
+                 <div>
+                    <p className="text-xs text-slate-400 font-bold uppercase">ATS Score</p>
+                    <p className="text-white font-bold">Excellent</p>
+                 </div>
+              </div>
+           </motion.div>
+        </motion.div>
 
-    setLoading(true);
-    setResult(null);
-    
-    const steps = [
-      "Reading your resume...", 
-      "Analyzing ATS compatibility...", 
-      "Identifying key skill gaps...", 
-      "Comparing against top candidates...", 
-      "Crafting personalized improvements...",
-      "Finalizing your audit report..."
-    ];
-    let stepIdx = 0;
-    setScanStep(steps[0]);
-    const interval = setInterval(() => {
-      stepIdx = (stepIdx + 1) % steps.length;
-      setScanStep(steps[stepIdx]);
-    }, 2000); 
-
-    try {
-      const auditData = await callApi('audit', { file: selectedFile, jdText });
-      setResult(auditData);
-    } catch (err: any) {
-      console.error("Audit Error:", err);
-      setNotification({ 
-        type: 'error', 
-        message: err.message || "Audit failed. Check your internet connection or try a different file." 
-      });
-    } finally {
-      clearInterval(interval);
-      setLoading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setResult(null);
-    setSelectedFile(null);
-    setJdText('');
-    setReadyHtml(null);
-    setNotification(null);
-  };
-
-
-  const handleOpenPreview = (html: string) => {
-    if (openInNewTab(html)) {
-      setReadyHtml(null);
-    }
-  };
-
-  const handleRefactor = async (type: 'pdf' | 'docx') => {
-    if (!selectedFile || !result) return;
-    
-    setRefactoring(true);
-    setScanStep("Refining Content Strategy...");
-    setNotification(null);
-    setReadyHtml(null);
-
-    try {
-      const { text } = await callApi('refactor', { file: selectedFile, jdText, options: refactorSettings });
-      const optimizedHtml = cleanAIHtml(text);
-
-      if (!optimizedHtml || optimizedHtml.length < 50) {
-        throw new Error("Resume optimization returned insufficient data. Please try again.");
-      }
-
-      setScanStep("Generating Document Assets...");
-      const candidateName = extractCandidateName(optimizedHtml);
-      const generatedContent = generateResumeTemplate(optimizedHtml, candidateName);
-
-      if (type === 'pdf') {
-        if (!openInNewTab(generatedContent)) {
-          setReadyHtml(generatedContent);
-          setNotification({ type: 'success', message: "Resume ready! Click 'View Optimized Resume' to preview." });
-        }
-      } else if (type === 'docx') {
-        const filename = `${candidateName.replace(/\s+/g, '_')}_Optimized.docx`;
-        downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      }
-    } catch (err: any) {
-      setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
-    } finally {
-      setRefactoring(false);
-    }
-  };
-
-  const handleSendMessage = async (customMsg?: string) => {
-    const textToSend = customMsg || inputValue;
-    if (!textToSend.trim() || chatLoading) return;
-    
-    setInputValue('');
-    const newMessages = [...messages, { role: 'user', text: textToSend, timestamp: Date.now() }] as Message[];
-    setMessages(newMessages);
-    setChatLoading(true);
-
-    try {
-      const { text } = await callApi('chat', { messages: newMessages });
-      setMessages(prev => [...prev, { role: 'model', text, timestamp: Date.now() }]);
-    } catch (err: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "I hit a snag connecting. Let's try that again!", timestamp: Date.now() }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const startTour = () => {
-    setTourStep(0);
-    setTourActive(true);
-    setShowSettings(true);
-  };
+      </motion.div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent text-slate-800 dark:text-slate-200 font-sans selection:bg-violet-500/30 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-[#020617] text-slate-200 font-sans selection:bg-violet-500/30">
       
-      {notification && (
-        <Notification type={notification.type} message={notification.message} onClose={() => setNotification(null)} />
-      )}
-
-      <TourOverlay active={tourActive} step={tourStep} onClose={() => setTourActive(false)} onStepChange={setTourStep} />
-
       <Header 
-        onReset={handleReset} 
-        onStartTour={startTour} 
+        onReset={() => {}} 
+        onStartTour={() => {}} 
         onToggleTheme={() => setIsDarkMode(!isDarkMode)} 
         isDarkMode={isDarkMode} 
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-10 lg:p-14 space-y-8 md:space-y-16 overflow-y-auto custom-scrollbar">
-        
-        <StrategySettings 
-          showSettings={showSettings} 
-          setShowSettings={setShowSettings} 
-          settings={refactorSettings} 
-          setSettings={setRefactorSettings} 
-        />
-
-        {loading || refactoring ? (
-          <LoadingScreen scanStep={scanStep} />
-        ) : result ? (
-          <AuditResults 
-            result={result} 
-            readyHtml={readyHtml} 
-            fileName={selectedFile?.name}
-            onReset={handleReset} 
-            onRefactor={handleRefactor} 
-            onPreview={handleOpenPreview} 
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-700">
-            <UploadSection 
-              onFileSelect={handleFileSelect}
-              selectedFile={selectedFile} 
-            />
-            
-            <JobDescriptionSection 
-              jdText={jdText} 
-              setJdText={setJdText} 
-              onAudit={handleAudit} 
-              loading={loading} 
-              hasFile={!!selectedFile} 
-            />
+      <main className="flex-1 w-full relative z-10">
+          {/* Landing Page View */}
+          <div className="space-y-0 pb-20">
+            <LandingHero />
+            <div id="features">
+              <FeaturesSection />
+            </div>
+            <PricingSection />
           </div>
-        )}
       </main>
-
-      <ChatInterface 
-        open={chatOpen} 
-        setOpen={setChatOpen} 
-        messages={messages} 
-        inputValue={inputValue} 
-        setInputValue={setInputValue} 
-        loading={chatLoading} 
-        onSendMessage={handleSendMessage} 
-      />
 
       <Footer />
     </div>
