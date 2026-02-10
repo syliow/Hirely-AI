@@ -6,7 +6,7 @@ import { checkRateLimit } from '../lib/rateLimit';
 console.log('Testing Rate Limiter...');
 
 const identifier = 'test-user-' + Math.random().toString(36).substring(7);
-const MAX_REQUESTS = 30;
+const MAX_REQUESTS = 60; // Updated to match lib/rateLimit.ts config
 
 let limited = false;
 
@@ -24,7 +24,7 @@ if (!result.limited) {
   console.error(`Request ${MAX_REQUESTS + 1} was NOT limited but should have been!`);
   process.exit(1);
 } else {
-  console.log('✅ Rate limiter correctly blocked the 31st request.');
+  console.log(`✅ Rate limiter correctly blocked request ${MAX_REQUESTS + 1}.`);
 }
 
 // Check remaining

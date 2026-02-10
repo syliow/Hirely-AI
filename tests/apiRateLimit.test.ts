@@ -27,9 +27,9 @@ async function runTest() {
   console.log('Testing API Rate Limiting...');
 
   const ip = '192.168.1.' + Math.floor(Math.random() * 255);
-  const MAX_REQUESTS = 30;
+  const MAX_REQUESTS = 60; // Updated to match lib/rateLimit.ts config
 
-  // We expect the first 30 requests to fail with 400 (Invalid JSON/Validation) or 500 (Missing API Key)
+  // We expect the first 60 requests to fail with 400 (Invalid JSON/Validation) or 500 (Missing API Key)
   // BUT NOT 429 (Rate Limit).
   // The handler checks rate limit FIRST.
 
@@ -49,7 +49,7 @@ async function runTest() {
     }
   }
 
-  console.log('Verifying 31st request is rate limited...');
+  console.log(`Verifying request ${MAX_REQUESTS + 1} is rate limited...`);
   const req = createRequest(ip);
   const res = await POST(req);
 
