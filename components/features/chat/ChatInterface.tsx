@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { BrandLogo } from '@/components/BrandLogo';
-import { FormattedText } from '@/components/FormattedText';
 import { Message } from '@/lib/types';
 import { MessageSquare, X, Loader2, Send, Target, PenTool, Sparkles } from 'lucide-react';
+import { ChatMessage } from './ChatMessage';
 
 const CHAT_SUGGESTIONS = [
   { text: "How to tailor my resume?", icon: <Target className="w-4 h-4" /> },
@@ -74,11 +74,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
         
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar bg-white dark:bg-[#020617]">
           {messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[88%] p-6 rounded-[32px] text-base leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-violet-600 text-white rounded-tr-none' : 'bg-slate-100 dark:bg-slate-900/80 text-slate-800 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-white/5'}`}>
-                {msg.role === 'model' ? <FormattedText text={msg.text} /> : msg.text}
-              </div>
-            </div>
+            <ChatMessage key={idx} message={msg} />
           ))}
           {loading && (
             <div className="flex justify-start">
