@@ -52,7 +52,7 @@ export function getClientIdentifier(request: Request): string {
              realIp || 
              cfConnectingIp || 
              vercelIp ||
-             `anonymous-${Math.random()}`; // Prevent shared rate limit for anonymous users
+             'anonymous'; // Fallback for clients without identifiable IP (Shared Rate Limit)
   
   return ip;
 }
