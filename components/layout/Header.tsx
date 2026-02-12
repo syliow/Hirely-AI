@@ -33,8 +33,8 @@ export const Header: React.FC<HeaderProps> = ({ onReset, onStartTour, onToggleTh
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground ml-4">
-          <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
           <Link href="/features" className="hover:text-foreground transition-colors">Features</Link>
+          <Link href="/#pricing" className="hover:text-foreground transition-colors">Pricing</Link>
         </nav>
       </div>
       

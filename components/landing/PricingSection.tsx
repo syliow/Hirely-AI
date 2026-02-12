@@ -107,6 +107,73 @@ export const PricingSection = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Comparison Table */}
+        <div className="mt-24 max-w-4xl mx-auto relative group">
+          
+          {/* Decorative Glow */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative rounded-[2rem] bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl"
+          >
+             {/* Header */}
+             <div className="grid grid-cols-3 p-8 bg-slate-900/50 backdrop-blur-xl border-b border-white/5">
+                <div className="flex items-center text-sm font-bold text-slate-400 uppercase tracking-widest">Core Features</div>
+                <div className="text-center">
+                    <span className="text-sm font-bold text-slate-200 uppercase tracking-widest">Starter</span>
+                </div>
+                <div className="text-center relative">
+                    <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400 uppercase tracking-widest">Pro Plan</span>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-violet-500 to-indigo-500 blur-[20px] opacity-30" />
+                </div>
+             </div>
+             
+             {/* Rows */}
+             <div className="divide-y divide-white/5 relative">
+                {/* Vertical Highlight for Pro Column */}
+                <div className="absolute top-0 bottom-0 right-0 w-1/3 bg-violet-500/[0.03] border-l border-white/5 pointer-events-none" />
+
+                {[
+                  { name: "Daily Audits", free: "10 Credits", pro: "Unlimited" },
+                  { name: "ATS Scoring Engine", free: "Basic Analysis", pro: "Deep Hiring Manager Logic" },
+                  { name: "Detailed Fixes", free: false, pro: true },
+                  { name: "PDF & Docx Export", free: false, pro: true },
+                  { name: "Version History", free: false, pro: true },
+                  { name: "Priority Support", free: false, pro: true },
+                ].map((item, i) => (
+                  <div key={i} className="grid grid-cols-3 p-6 text-sm hover:bg-white/[0.02] transition-colors relative z-10 group/row">
+                     <div className="flex items-center text-slate-300 font-medium group-hover/row:text-white transition-colors">{item.name}</div>
+                     
+                     {/* Free Values */}
+                     <div className="flex items-center justify-center text-slate-500 font-medium">
+                        {typeof item.free === 'boolean' ? (
+                          item.free ? <Check className="w-5 h-5 text-emerald-500" /> : <div className="w-2 h-2 rounded-full bg-slate-800" />
+                        ) : (
+                          item.free
+                        )}
+                     </div>
+                     
+                     {/* Pro Values */}
+                     <div className="flex items-center justify-center text-white font-bold">
+                        {typeof item.pro === 'boolean' ? (
+                          item.pro ? (
+                            <div className="p-1 rounded-full bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+                                <Check className="w-4 h-4" />
+                            </div>
+                          ) : <div className="w-2 h-2 rounded-full bg-slate-800" />
+                        ) : (
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-200 to-indigo-200">{item.pro}</span>
+                        )}
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
