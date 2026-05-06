@@ -35,7 +35,6 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [jdText, setJdText] = useState('');
   const [result, setResult] = useState<AuditResult | null>(null);
-  const [readyHtml, setReadyHtml] = useState<string | null>(null);
 
   // --- Process State ---
   const [loading, setLoading] = useState(false);
@@ -140,23 +139,13 @@ export default function Home() {
       "Deep analysis in progress (Gemma 4 takes a moment)...",
       "Almost there! Optimizing your results..."
     ];
-    const insights = [
-      "Did you know? ATS systems filter out 75% of resumes before a human sees them.",
-      "Action verbs like 'Spearheaded' or 'Orchestrated' score 40% higher than 'Helped'.",
-      "Gemma 4 is currently running a 26-billion parameter deep scan on your document...",
-      "Quantifying your results (e.g. 'Increased sales by 20%') is the #1 way to improve your score.",
-      "We're checking for over 50+ common formatting pitfalls that trigger ATS warnings...",
-      "Almost done! Gemma is now drafting your custom refactoring strategy..."
-    ];
     let stepIdx = 0;
-    let insightIdx = 0;
     
     setScanStep(steps[0]);
     const interval = setInterval(() => {
       stepIdx = (stepIdx + 1) % steps.length;
-      insightIdx = (insightIdx + 1) % insights.length;
-      setScanStep(`${steps[stepIdx]} \n\n ${insights[insightIdx]}`);
-    }, 3000); 
+      setScanStep(steps[stepIdx]);
+    }, 2000); 
 
     try {
       const auditData = await callApi('audit', { file: selectedFile, jdText });
@@ -177,24 +166,15 @@ export default function Home() {
     setResult(null);
     setSelectedFile(null);
     setJdText('');
-    setReadyHtml(null);
     setNotification(null);
   };
 
-
-  const handleOpenPreview = (html: string) => {
-    if (openInNewTab(html)) {
-      setReadyHtml(null);
-    }
-  };
-
-  const handleRefactor = async (type: 'pdf' | 'docx') => {
+  const handleRefactor = async () => {
     if (!selectedFile || !result) return;
     
     setRefactoring(true);
     setScanStep("Refining Content Strategy...");
     setNotification(null);
-    setReadyHtml(null);
 
     try {
       const { text } = await callApi('refactor', { file: selectedFile, jdText, options: refactorSettings });
@@ -208,15 +188,8 @@ export default function Home() {
       const candidateName = extractCandidateName(optimizedHtml);
       const generatedContent = generateResumeTemplate(optimizedHtml, candidateName);
 
-      if (type === 'pdf') {
-        if (!openInNewTab(generatedContent)) {
-          setReadyHtml(generatedContent);
-          setNotification({ type: 'success', message: "Resume ready! Click 'View Optimized Resume' to preview." });
-        }
-      } else if (type === 'docx') {
-        const filename = `${candidateName.replace(/\s+/g, '_')}_Optimized.docx`;
-        downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      }
+      const filename = `${candidateName.replace(/\s+/g, '_')}_Optimized.docx`;
+      downloadFile(generatedContent, filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     } catch (err: any) {
       setNotification({ type: 'error', message: err.message || "Refactor failed. Please try again." });
     } finally {
@@ -279,11 +252,9 @@ export default function Home() {
         ) : result ? (
           <AuditResults 
             result={result} 
-            readyHtml={readyHtml} 
             fileName={selectedFile?.name}
             onReset={handleReset} 
             onRefactor={handleRefactor} 
-            onPreview={handleOpenPreview} 
           />
         ) : (
           <div className="flex flex-col items-center justify-center space-y-16 animate-in fade-in duration-700">

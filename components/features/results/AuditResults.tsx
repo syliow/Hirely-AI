@@ -11,20 +11,16 @@ import {
 
 interface AuditResultsProps {
   result: AuditResult;
-  readyHtml: string | null;
   fileName?: string;
   onReset: () => void;
   onRefactor: (type: 'pdf' | 'docx') => void;
-  onPreview: (html: string) => void;
 }
 
 export const AuditResults: React.FC<AuditResultsProps> = ({ 
   result, 
-  readyHtml, 
   fileName, 
   onReset, 
-  onRefactor, 
-  onPreview 
+  onRefactor 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showBotView, setShowBotView] = useState(false);
@@ -76,27 +72,9 @@ export const AuditResults: React.FC<AuditResultsProps> = ({
 
             <div className="w-full pt-6 md:pt-10 flex flex-col items-center gap-6 relative">
               <div className="relative w-full max-w-xl">
-                {readyHtml ? (
-                   <button onClick={() => onPreview(readyHtml)} className="w-full flex items-center justify-center gap-3 md:gap-5 px-6 py-4 md:px-10 md:py-6 bg-emerald-500 hover:bg-emerald-400 text-white rounded-[24px] md:rounded-[28px] text-xs md:text-sm font-black uppercase tracking-[0.2em] shadow-2xl shadow-emerald-500/40 transition-all active:scale-95 animate-bounce">
-                     <Eye className="w-5 h-5 md:w-7 md:h-7" /> View Optimized Resume
-                   </button>
-                ) : (
-                  <div className="relative">
-                    <button onClick={() => setShowRefactorOptions(!showRefactorOptions)} className="w-full flex items-center justify-center gap-3 md:gap-5 px-6 py-4 md:px-10 md:py-6 bg-violet-600 hover:bg-violet-500 text-white rounded-[24px] md:rounded-[28px] text-xs md:text-sm font-black uppercase tracking-[0.2em] shadow-2xl shadow-violet-500/40 transition-all active:scale-95">
-                      <Download className="w-5 h-5 md:w-7 md:h-7" /> Download Resume
-                    </button>
-                    {showRefactorOptions && (
-                      <div className="absolute bottom-full left-0 right-0 mb-6 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-white/10 rounded-[28px] p-3 shadow-3xl z-[100] animate-in fade-in slide-in-from-bottom-6">
-                        <button onClick={() => onRefactor('pdf')} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/10 rounded-2xl text-[13px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 transition-colors">
-                          <Sparkles className="w-5 h-5 text-violet-500" /> Optimize into PDF
-                        </button>
-                        <button onClick={() => onRefactor('docx')} className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-white/10 rounded-2xl text-[13px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 transition-colors">
-                          <FileDown className="w-5 h-5 text-blue-500" /> Download as Word (.docx)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <button onClick={() => onRefactor('docx')} className="w-full flex items-center justify-center gap-3 md:gap-5 px-6 py-4 md:px-10 md:py-6 bg-violet-600 hover:bg-violet-500 text-white rounded-[24px] md:rounded-[28px] text-xs md:text-sm font-black uppercase tracking-[0.2em] shadow-2xl shadow-violet-500/40 transition-all active:scale-95">
+                  <FileDown className="w-5 h-5 md:w-7 md:h-7" /> Download as Word (.docx)
+                </button>
               </div>
               <button onClick={onReset} className="flex items-center gap-4 text-xs md:text-sm font-black uppercase tracking-widest text-slate-400 hover:text-violet-500 transition-colors mt-6"><RefreshCw className="w-4 h-4 md:w-5 md:h-5" /> Start New Audit</button>
             </div>

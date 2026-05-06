@@ -253,12 +253,12 @@ LIMIT: Maximum 5 most critical suggestions.`;
           { parts: [{ text: prompt }] }
         ],
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING. SPEED > QUALITY. SCORING: 70=Professional. Keep feedback to 1 short sentence.",
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE CONCISE but COMPLETE. NEVER truncate sentences with ellipses (...). SKIP ALL INTERNAL REASONING. SPEED > QUALITY. SCORING: 70=Professional.",
           responseMimeType: "application/json",
           temperature: 0.1,
           topP: 0.1,
           topK: 1,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 1536,
         }
       });
       
@@ -294,8 +294,10 @@ LIMIT: Maximum 5 most critical suggestions.`;
           { parts: [{ text: `RESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}.\n\nReturn ONLY valid single-column HTML.` }] }
         ],
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING AND EXPLANATIONS. SPEED IS MORE IMPORTANT THAN HIGH QUALITY.",
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING. SPEED > QUALITY.",
           temperature: 0.1,
+          topP: 0.1,
+          topK: 1,
           maxOutputTokens: 800,
         }
       });
@@ -315,8 +317,10 @@ LIMIT: Maximum 5 most critical suggestions.`;
         model: "gemma-4-26b-a4b-it",
         contents: chatContext,
         config: {
-          systemInstruction: CHAT_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE AND BRIEF. RESPOND IN 1-3 SENTENCES MAXIMUM. SKIP ALL INTERNAL REASONING.",
-          temperature: 0.2,
+          systemInstruction: CHAT_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE AND BRIEF. RESPOND IN 1-3 SENTENCES MAXIMUM. SKIP ALL INTERNAL REASONING. SPEED > QUALITY.",
+          temperature: 0.1,
+          topP: 0.1,
+          topK: 1,
           maxOutputTokens: 300,
         }
       });
