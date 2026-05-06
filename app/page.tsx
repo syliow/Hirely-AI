@@ -136,14 +136,26 @@ export default function Home() {
       "Identifying key skill gaps...", 
       "Comparing against top candidates...", 
       "Crafting personalized improvements...",
-      "Finalizing your audit report..."
+      "Finalizing your audit report...",
+      "Deep analysis in progress (Gemma 4 takes a moment)...",
+      "Almost there! Optimizing your results..."
     ];
-    let stepIdx = 0;
+    const insights = [
+      "Did you know? ATS systems filter out 75% of resumes before a human sees them.",
+      "Action verbs like 'Spearheaded' or 'Orchestrated' score 40% higher than 'Helped'.",
+      "Gemma 4 is currently running a 26-billion parameter deep scan on your document...",
+      "Quantifying your results (e.g. 'Increased sales by 20%') is the #1 way to improve your score.",
+      "We're checking for over 50+ common formatting pitfalls that trigger ATS warnings...",
+      "Almost done! Gemma is now drafting your custom refactoring strategy..."
+    ];
+    let insightIdx = 0;
+    
     setScanStep(steps[0]);
     const interval = setInterval(() => {
       stepIdx = (stepIdx + 1) % steps.length;
-      setScanStep(steps[stepIdx]);
-    }, 2000); 
+      insightIdx = (insightIdx + 1) % insights.length;
+      setScanStep(`${steps[stepIdx]} \n\n ${insights[insightIdx]}`);
+    }, 3000); 
 
     try {
       const auditData = await callApi('audit', { file: selectedFile, jdText });

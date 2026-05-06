@@ -9,7 +9,7 @@ export interface Suggestion {
   original_text: string;
   finding: string;
   fix: string;
-  thinking: string;
+  thinking?: string;
   severity: Severity;
 }
 
@@ -30,7 +30,7 @@ export interface JDAlignment {
   matched_keywords: string[];
   missing_keywords: string[];
   relevant_skills_to_highlight: string[];
-  keyword_weights: KeywordWeight[];
+  keyword_weights?: KeywordWeight[];
 }
 
 export interface CriteriaScore {

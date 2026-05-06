@@ -20,27 +20,8 @@ const MAX_CACHE_SIZE = 50;
 
 let aiClient: GoogleGenAI | null = null;
 
-const SYSTEM_INSTRUCTION = `
-You are an expert resume reviewer and career coach. You follow professional resume best practices strictly:
-- Bullets start with a strong action verb (e.g., Led, Built, Optimized, Automated).
-- Bullets follow the format: Action + Skill/Tool + Result (XYZ Formula).
-- Results are quantified when possible.
-- Language is concise, ATS-friendly, and role-relevant.
-- No first-person language ("I", "me").
-- No fluff or vague claims.
-
-TASK:
-Turn "judgment" into "execution." When reviewing a resume, don't just say it's weak. FIX IT.
-
-STRATEGIC ANALYSIS PROTOCOL (Step-by-Step):
-1. EVALUATE: Scan for weak verbs (e.g., "Responsible for", "Helped") and lack of metrics.
-2. CRITIQUE: Briefly identify *why* it is weak (e.g., "Passive verb", "Missing impact").
-3. REWRITE: Provide 3 rewritten versions using the XYZ formula.
-   - Version 1: Conservative polish.
-   - Version 2: Strong action-oriented.
-   - Version 3: Metric-focused (using placeholders like [X%] if needed).
-4. MISSING DATA: Identify specific missing details that would strengthen the bullet (e.g., "Add team size", "Add revenue impact").
-`;
+const SYSTEM_INSTRUCTION = `Expert Resume Coach. Best practices: Strong action verbs, XYZ formula (Action+Skill+Result), quantified metrics, ATS-friendly, role-relevant. No "I/me". No fluff.
+PROTOCOL: 1. Identify weak points (passive verbs, no metrics). 2. Provide 3 XYZ-formula rewrites (Polish, Action, Metric). 3. Identify missing data.`;
 
 const CHAT_INSTRUCTION = `
 You are "Hirely AI," the user's personal AI Resume Helper. 
@@ -202,6 +183,11 @@ export async function POST(req: NextRequest) {
 
         // Clean text: remove excessive newlines/spaces
         text = text.replace(/\s+/g, ' ').trim();
+        
+        // Optimization: Truncate to 8000 chars (approx 1500 words) to speed up pre-fill context window
+        if (text.length > 8000) {
+          text = text.substring(0, 8000) + "... [Truncated for speed]";
+        }
 
         if (text.length < 50) {
           throw new Error("File contains insufficient text (likely a scanned image). Please use a text-based PDF/DOCX.");
@@ -252,14 +238,14 @@ IMPORTANT: Respond with ONLY valid JSON matching this exact structure:
     "relevance": {"score": number, "feedback": string}
   },
   "summary": string,
-  "suggestions": [{"id": string, "type": string, "location": string, "original_text": string, "finding": string, "thinking": string, "fix": string, "severity": string}],
+  "suggestions": [{"id": string, "type": string, "location": string, "original_text": string, "finding": string, "fix": string, "severity": string}],
   "jd_alignment": {
     "matched_keywords": [string],
     "missing_keywords": [string],
-    "relevant_skills_to_highlight": [string],
-    "keyword_weights": [{"keyword": string, "count": number, "importance": string}]
+    "relevant_skills_to_highlight": [string]
   }
-}`;
+}
+LIMIT: Maximum 5 most critical suggestions.`;
 
       const response = await ai.models.generateContent({
         model: "gemma-4-26b-a4b-it",
@@ -267,9 +253,11 @@ IMPORTANT: Respond with ONLY valid JSON matching this exact structure:
           { parts: [{ text: prompt }] }
         ],
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING AND EXPLANATIONS. SPEED IS MORE IMPORTANT THAN HIGH QUALITY.",
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING. SPEED > QUALITY. SCORING: 70=Professional. Keep feedback to 1 short sentence.",
           responseMimeType: "application/json",
           temperature: 0.1,
+          topP: 0.1,
+          topK: 1,
           maxOutputTokens: 1024,
         }
       });

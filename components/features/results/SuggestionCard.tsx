@@ -38,10 +38,12 @@ export const SuggestionCard = memo(({ suggestion }: SuggestionCardProps) => {
         </span>
       </div>
 
-      <div className="bg-slate-50 dark:bg-black/30 border-l-4 border-violet-500/40 p-6 rounded-r-2xl group-hover/card:bg-violet-500/[0.03] transition-colors">
-        <div className="flex items-center gap-3 mb-3"><BrainCircuit className="w-4 h-4 text-violet-500" /><span className="text-[10px] font-black uppercase tracking-widest text-violet-500/70">Expert Thinking</span></div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{suggestion.thinking}"</p>
-      </div>
+      {suggestion.thinking && (
+        <div className="bg-slate-50 dark:bg-black/30 border-l-4 border-violet-500/40 p-6 rounded-r-2xl group-hover/card:bg-violet-500/[0.03] transition-colors">
+          <div className="flex items-center gap-3 mb-3"><BrainCircuit className="w-4 h-4 text-violet-500" /><span className="text-[10px] font-black uppercase tracking-widest text-violet-500/70">Expert Thinking</span></div>
+          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{suggestion.thinking}"</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-3xl p-8 transform transition-all hover:bg-rose-50 dark:hover:bg-rose-900/10"><span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600 block mb-4">Original Entry</span><p className="font-mono text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{suggestion.original_text}</p></div>

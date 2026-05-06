@@ -160,7 +160,7 @@ export const AuditResults: React.FC<AuditResultsProps> = ({
               <span className="text-[10px] md:text-xs font-bold text-slate-400">Match Rank</span>
             </div>
             <div className="flex flex-wrap gap-2 md:gap-4">
-              {result.jd_alignment.keyword_weights.filter(kw => result.jd_alignment.matched_keywords.includes(kw.keyword)).map((kw, i) => (
+              {(result.jd_alignment.keyword_weights || []).filter(kw => result.jd_alignment.matched_keywords.includes(kw.keyword)).map((kw, i) => (
                 <div key={i} className="flex items-center gap-4 px-4 py-2 md:px-6 md:py-3 bg-violet-500/10 border border-violet-500/20 rounded-full text-xs md:text-sm font-bold uppercase text-violet-600 dark:text-violet-400">
                   {kw.keyword} <span className="bg-violet-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs">{kw.count}x</span>
                 </div>
@@ -173,7 +173,7 @@ export const AuditResults: React.FC<AuditResultsProps> = ({
               <span className="text-[10px] md:text-xs font-bold text-slate-400">Weight</span>
             </div>
             <div className="flex flex-wrap gap-2 md:gap-4">
-              {result.jd_alignment.keyword_weights.filter(kw => result.jd_alignment.missing_keywords.includes(kw.keyword)).map((kw, i) => (
+              {(result.jd_alignment.keyword_weights || []).filter(kw => result.jd_alignment.missing_keywords.includes(kw.keyword)).map((kw, i) => (
                 <div key={i} className="flex items-center gap-4 px-4 py-2 md:px-6 md:py-3 bg-rose-500/10 border border-rose-500/20 rounded-full text-xs md:text-sm font-bold uppercase text-rose-600 dark:text-rose-400">
                   {kw.keyword} <span className="bg-rose-500 text-white px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs uppercase">{kw.importance}</span>
                 </div>
