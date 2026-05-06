@@ -66,7 +66,7 @@ Chat with an AI assistant for personalized career guidance, including interview 
 
 - **Framework:** Next.js 15 with App Router
 - **Frontend:** React 19, TypeScript
-- **AI Model:** Google Gemini 3 (4B-IT)
+- **AI Model:** Google Gemini 4 (26B-A4B)
 - **Styling:** Tailwind CSS
 - **Icons:** Lucide React
 - **Security:** Input validation, XSS sanitization, Content Security Policy

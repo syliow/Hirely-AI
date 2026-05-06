@@ -19,7 +19,7 @@ const RATE_LIMIT_CONFIG = {
   // Window duration in milliseconds (1 minute)
   windowMs: 60 * 1000,
   // Daily limit per IP (RPD Protection)
-  dailyMaxRequests: 14400, // Updated for Gemma 3 27B (14.4K RPD)
+  dailyMaxRequests: 14400, // Updated for Gemma 4 (14.4K RPD)
   // Daily window (24 hours)
   dailyWindowMs: 24 * 60 * 60 * 1000,
   // Note: TPM (Tokens Per Minute) is strictly handled by the error handling back-off mechanism

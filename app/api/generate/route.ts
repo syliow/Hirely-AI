@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
       
       const extractedText = await extractTextFromFile(file);
 
-      // Use text-based prompt engineering to enforce JSON structure for Gemma 3
+      // Use text-based prompt engineering to enforce JSON structure for Gemma 4
       const prompt = `${SYSTEM_INSTRUCTION}
 
 RESUME TEXT CONTENT:
@@ -265,7 +265,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
 }`;
 
       const response = await ai.models.generateContent({
-        model: "gemma-3-4b-it",
+        model: "gemma-4-26b-a4b-it",
         contents: [
           { parts: [{ text: prompt }] }
         ],
@@ -285,7 +285,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       const extractedText = await extractTextFromFile(file);
 
       const response = await ai.models.generateContent({
-        model: "gemma-3-4b-it",
+        model: "gemma-4-26b-a4b-it",
         contents: [
           { parts: [{ text: `${SYSTEM_INSTRUCTION}\n\nRESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
         ],
@@ -305,7 +305,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       ];
 
       const response = await ai.models.generateContent({
-        model: "gemma-3-4b-it",
+        model: "gemma-4-26b-a4b-it",
         contents: chatContext,
       });
       
