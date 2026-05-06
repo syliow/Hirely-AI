@@ -230,23 +230,20 @@ export async function POST(req: NextRequest) {
       
       const extractedText = await extractTextFromFile(file);
 
-      // Use text-based prompt engineering to enforce JSON structure for Gemma 4
-      const prompt = `${SYSTEM_INSTRUCTION}
-
-RESUME TEXT CONTENT:
+      const prompt = `RESUME TEXT CONTENT:
 ${extractedText}
 
 AUDIT COMMAND: Perform analysis. JD: ${jdText || "Inferred"}
 
-IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (no markdown, no code blocks, just raw JSON):
+IMPORTANT: Respond with ONLY valid JSON matching this exact structure:
 {
   "overall_score": number,
   "ats_report": {
     "parsing_health_score": number,
     "layout_warnings": [string],
     "extracted_summary": string,
-    "ats_opinion": string (A professional opinion on the resume's machine-readability and structure),
-    "view_as_bot_preview": string (MUST be the exact raw text content extracted from the resume, not a summary)
+    "ats_opinion": string,
+    "view_as_bot_preview": ""
   },
   "criteria": {
     "formatting": {"score": number, "feedback": string},
@@ -255,7 +252,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
     "relevance": {"score": number, "feedback": string}
   },
   "summary": string,
-  "suggestions": [{"id": string, "type": string (Category: e.g. "IMPACT", "CONTENT", "FORMAT"), "location": string (e.g. "Experience - Tatsu Works"), "original_text": string (MANDATORY: Copy the exact bullet point/sentence from the resume being fixed), "finding": string (Short title of the problem, e.g. "Passive Verb Usage"), "thinking": string, "fix": string (The full rewritten bullet point), "severity": string}],
+  "suggestions": [{"id": string, "type": string, "location": string, "original_text": string, "finding": string, "thinking": string, "fix": string, "severity": string}],
   "jd_alignment": {
     "matched_keywords": [string],
     "missing_keywords": [string],
@@ -269,14 +266,33 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
         contents: [
           { parts: [{ text: prompt }] }
         ],
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING AND EXPLANATIONS. SPEED IS MORE IMPORTANT THAN HIGH QUALITY.",
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+        }
       });
       
-      // Clean and parse the response
       let jsonText = response.text || '{}';
-      // Remove markdown code blocks if present
-      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const startIdx = jsonText.indexOf('{');
+      const endIdx = jsonText.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1) {
+        jsonText = jsonText.substring(startIdx, endIdx + 1);
+      } else {
+        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      }
       
-      return NextResponse.json(JSON.parse(jsonText));
+      try {
+        const parsedJson = JSON.parse(jsonText);
+        if (parsedJson.ats_report) {
+          parsedJson.ats_report.view_as_bot_preview = extractedText;
+        }
+        return NextResponse.json(parsedJson);
+      } catch (e) {
+        console.error("JSON Parse Error. Raw Text:", response.text);
+        throw new Error("The AI returned an invalid format. Please try again.");
+      }
     }
 
     if (action === 'refactor') {
@@ -287,9 +303,13 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       const response = await ai.models.generateContent({
         model: "gemma-4-26b-a4b-it",
         contents: [
-          { parts: [{ text: `${SYSTEM_INSTRUCTION}\n\nRESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}. Return ONLY valid single-column HTML.` }] }
+          { parts: [{ text: `RESUME CONTENT:\n${extractedText}\n\nSTRATEGIC REFACTOR: Target ${options.level}. Intensity ${options.jdAlignment}%. JD: ${jdText || "Inferred"}.\n\nReturn ONLY valid single-column HTML.` }] }
         ],
-        // config: { systemInstruction: SYSTEM_INSTRUCTION }, // Removed
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING AND EXPLANATIONS. SPEED IS MORE IMPORTANT THAN HIGH QUALITY.",
+          temperature: 0.1,
+          maxOutputTokens: 800,
+        }
       });
       
       return NextResponse.json({ text: response.text });
@@ -299,7 +319,6 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       const { messages } = payload as { messages: any[] };
       // Prepend chat instruction to the first message context
       const chatContext = [
-        { role: 'user', parts: [{ text: CHAT_INSTRUCTION }] },
         { role: 'model', parts: [{ text: "Hi! I'm Hirely AI. I'm ready to help you land that dream job. How can I assist you today?" }] },
         ...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }))
       ];
@@ -307,6 +326,11 @@ IMPORTANT: You MUST respond with ONLY valid JSON matching this exact structure (
       const response = await ai.models.generateContent({
         model: "gemma-4-26b-a4b-it",
         contents: chatContext,
+        config: {
+          systemInstruction: CHAT_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE AND BRIEF. RESPOND IN 1-3 SENTENCES MAXIMUM. SKIP ALL INTERNAL REASONING.",
+          temperature: 0.2,
+          maxOutputTokens: 300,
+        }
       });
       
       return NextResponse.json({ text: response.text });
