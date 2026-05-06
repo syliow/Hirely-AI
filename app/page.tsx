@@ -148,6 +148,7 @@ export default function Home() {
       "We're checking for over 50+ common formatting pitfalls that trigger ATS warnings...",
       "Almost done! Gemma is now drafting your custom refactoring strategy..."
     ];
+    let stepIdx = 0;
     let insightIdx = 0;
     
     setScanStep(steps[0]);
