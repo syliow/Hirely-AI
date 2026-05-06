@@ -253,12 +253,12 @@ LIMIT: Maximum 5 most critical suggestions.`;
           { parts: [{ text: prompt }] }
         ],
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE CONCISE but COMPLETE. NEVER truncate sentences with ellipses (...). SKIP ALL INTERNAL REASONING. SPEED > QUALITY. SCORING: 70=Professional.",
+          systemInstruction: SYSTEM_INSTRUCTION + "\n\nCRITICAL: BE EXTREMELY CONCISE. SKIP ALL INTERNAL REASONING. SPEED > QUALITY. SCORING: 70=Professional. Keep feedback to 1 short sentence.",
           responseMimeType: "application/json",
           temperature: 0.1,
           topP: 0.1,
           topK: 1,
-          maxOutputTokens: 1536,
+          maxOutputTokens: 1024,
         }
       });
       
