@@ -52,7 +52,7 @@ export function getClientIdentifier(request: Request): string {
              realIp || 
              cfConnectingIp || 
              vercelIp ||
-             `anonymous-${Math.random()}`; // Prevent shared rate limit for anonymous users
+             'anonymous'; // Fallback to shared bucket for anonymous requests (prevents rate limit bypass)
   
   return ip;
 }
