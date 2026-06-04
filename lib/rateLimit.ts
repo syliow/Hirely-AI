@@ -47,12 +47,13 @@ export function getClientIdentifier(request: Request): string {
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
   const vercelIp = request.headers.get('x-vercel-forwarded-for');
   
-  // Use the first available IP or fall back to a random string if failing to prevent global blocking
+  // Use the first available IP or fall back to a shared 'anonymous' bucket if failing to identify
+  // We use a shared bucket to prevent attackers from bypassing rate limits by spoofing/omitting headers
   const ip = forwarded?.split(',')[0]?.trim() || 
              realIp || 
              cfConnectingIp || 
              vercelIp ||
-             `anonymous-${Math.random()}`; // Prevent shared rate limit for anonymous users
+             'anonymous';
   
   return ip;
 }
