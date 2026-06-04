@@ -44,6 +44,7 @@ interface ChatInterfaceProps {
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, messages, inputValue, setInputValue, loading, onSendMessage }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -51,9 +52,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
     }
   }, [messages, loading, open]);
 
+  useEffect(() => {
+    if (open && inputRef.current) {
+      // Small timeout to allow animation/rendering to complete if needed
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
   return (
     <>
-      <button id="hirely-fab" onClick={() => setOpen(!open)} className={`fixed bottom-4 right-4 md:bottom-10 md:right-10 w-16 h-16 md:w-20 md:h-20 rounded-full bg-violet-500 text-white shadow-3xl shadow-violet-500/40 hover:scale-110 active:scale-95 transition-all z-[110] flex items-center justify-center group ${open ? 'rotate-90 bg-slate-800 dark:bg-white text-white dark:text-slate-900' : ''}`}>
+      <button
+        id="hirely-fab"
+        onClick={() => setOpen(!open)}
+        aria-label={open ? "Close chat" : "Open chat"}
+        className={`fixed bottom-4 right-4 md:bottom-10 md:right-10 w-16 h-16 md:w-20 md:h-20 rounded-full bg-violet-500 text-white shadow-3xl shadow-violet-500/40 hover:scale-110 active:scale-95 transition-all z-[110] flex items-center justify-center group ${open ? 'rotate-90 bg-slate-800 dark:bg-white text-white dark:text-slate-900' : ''}`}
+      >
         {open ? <X className="w-6 h-6 md:w-8 md:h-8" /> : <MessageSquare className="w-6 h-6 md:w-8 md:h-8" />}
         {!open && <div className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-rose-500 border-4 border-white dark:border-[#020617] rounded-full animate-bounce" />}
       </button>
@@ -69,7 +82,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
               </p>
             </div>
           </div>
-          <button onClick={() => setOpen(false)} className="p-4 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all"><X className="w-8 h-8 text-slate-500" /></button>
+          <button onClick={() => setOpen(false)} aria-label="Close chat" className="p-4 hover:bg-slate-100 dark:hover:bg-white/10 rounded-2xl transition-all"><X className="w-8 h-8 text-slate-500" /></button>
         </div>
         
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar bg-white dark:bg-[#020617]">
@@ -82,7 +95,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-[32px] rounded-tl-none border border-slate-200 dark:border-white/5 flex items-center gap-3">
+              <div role="status" aria-live="polite" aria-label="Bot is typing" className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-[32px] rounded-tl-none border border-slate-200 dark:border-white/5 flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
                 <TypingMessage />
               </div>
@@ -101,8 +114,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ open, setOpen, mes
             </div>
           )}
           <div className="relative">
-            <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && onSendMessage()} placeholder="Ask for career prep advice..." className="w-full bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/10 rounded-[28px] py-6 pl-10 pr-20 text-base focus:ring-2 focus:ring-violet-500 outline-none shadow-inner transition-all" />
-            <button onClick={() => onSendMessage()} disabled={!inputValue.trim() || loading} className="absolute right-3 top-3 p-4 bg-violet-500 text-white rounded-[20px] shadow-lg active:scale-95 transition-all disabled:opacity-50"><Send className="w-6 h-6" /></button>
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSendMessage()}
+              placeholder="Ask for career prep advice..."
+              aria-label="Chat message input"
+              className="w-full bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/10 rounded-[28px] py-6 pl-10 pr-20 text-base focus:ring-2 focus:ring-violet-500 outline-none shadow-inner transition-all"
+            />
+            <button
+              onClick={() => onSendMessage()}
+              disabled={!inputValue.trim() || loading}
+              aria-label="Send message"
+              className="absolute right-3 top-3 p-4 bg-violet-500 text-white rounded-[20px] shadow-lg active:scale-95 transition-all disabled:opacity-50"
+            >
+              <Send className="w-6 h-6" />
+            </button>
           </div>
         </div>
       </div>
